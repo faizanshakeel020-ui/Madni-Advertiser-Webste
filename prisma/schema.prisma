@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Shop categories (Etsy-style browsable categories) ----
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  image       String?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  products    Product[]
+}
+
+// ---- Products: BUY_NOW (cart enabled) or CUSTOM_ORDER (quote only) ----
+enum ProductType {
+  BUY_NOW
+  CUSTOM_ORDER
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String
+  price       Int? // null => "Custom Pricing" / quote based
+  oldPrice    Int?
+  type        ProductType @default(CUSTOM_ORDER)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  images      String      @default("[]") // JSON array of image paths
+  specs       String? // JSON array of {label, value}
+  options     String? // JSON array of {label, values: []} for customization
+  badge       String? // e.g. Best Seller, New
+  stock       Int         @default(10)
+  featured    Boolean     @default(false)
+  popularity  Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// ---- Buy Now orders ----
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  customerName  String
+  phone         String
+  email         String?
+  address       String
+  city          String
+  items         String // JSON array of {id, slug, name, image, price, qty}
+  subtotal      Int
+  paymentMethod String // COD | BANK_TRANSFER
+  status        OrderStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ---- Quote requests for custom/service work ----
+enum QuoteStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  CLOSED
+}
+
+model QuoteRequest {
+  id             String      @id @default(cuid())
+  reference      String      @unique
+  name           String
+  phone          String
+  email          String?
+  service        String
+  productName    String?
+  details        String
+  city           String
+  referenceImage String? // path served via /api/files/...
+  status         QuoteStatus @default(NEW)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+// ---- Admin login (separate from guest checkout) ----
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

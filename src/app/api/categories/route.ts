@@ -1,0 +1,26 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+/** GET /api/categories — shop categories with product counts */
+export async function GET() {
+  try {
+    const cats = await db.category.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { products: true } } },
+    });
+    return NextResponse.json(
+      cats.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        description: c.description,
+        image: c.image,
+        sortOrder: c.sortOrder,
+        productCount: c._count.products,
+      }))
+    );
+  } catch (e) {
+    console.error("categories GET error", e);
+    return NextResponse.json({ error: "Failed to load categories" }, { status: 500 });
+  }
+}
