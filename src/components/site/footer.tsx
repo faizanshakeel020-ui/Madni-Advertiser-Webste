@@ -160,9 +160,6 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="container-site flex flex-col items-center justify-between gap-3 py-5 text-xs text-zinc-500 sm:flex-row">
-          <p>
-            © {new Date().getFullYear()} {SITE.name}. All rights reserved.
-          </p>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Quick links">
             <button onClick={() => navigate("/about")} className="hover:text-primary">About</button>
             <button onClick={() => navigate("/portfolio")} className="hover:text-primary">Portfolio</button>
@@ -172,6 +169,9 @@ export function Footer() {
             </button>
             <button onClick={() => navigate("/admin")} className="text-zinc-600 hover:text-zinc-300">Admin</button>
           </nav>
+          <p>
+            © {new Date().getFullYear()} {SITE.name}. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
