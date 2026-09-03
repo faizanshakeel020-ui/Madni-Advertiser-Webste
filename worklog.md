@@ -59,3 +59,19 @@ Work Log:
 
 Stage Summary:
 - Footer bottom bar: quick links (incl. Admin access) now on the left, copyright on the right; mobile layout unchanged (stacked, centered)
+
+---
+Task ID: 4-backup
+Agent: Z.ai Code (main agent)
+Task: Save project as archive (user asked for RAR)
+
+Work Log:
+- Checked available tools: rar (creator) NOT installed on this machine — only unrar (extract-only) and zip; RAR is proprietary so creation not possible here
+- Created clean project backup as ZIP instead: /home/z/my-project/download/madni-advertiser-backup.zip (5.5MB, 208 files)
+- Included: src/ (all code), public/ (44 images), db/custom.db (live data), prisma/schema.prisma, scripts/seed.ts, mini-services/, upload/, package.json, bun.lock, all configs (tsconfig, next.config, tailwind, postcss, components.json, eslint, Caddyfile), worklog.md
+- Excluded: node_modules (1.2GB, restore via `bun install`), .next build cache, logs, sandbox env folders (skills/, examples/, tests/)
+- Verified ZIP contents via unzip -l — all key files present
+
+Stage Summary:
+- Project backup available for download at download/madni-advertiser-backup.zip (5.5MB)
+- Restore: extract → `bun install` → `bun run dev` (db + images + code all included)
