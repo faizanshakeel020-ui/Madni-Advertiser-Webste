@@ -13,6 +13,7 @@ import {
   Star,
   Trash2,
   Upload,
+  Wand2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,9 +52,11 @@ import {
   adminCategorizeProduct,
   adminDeleteProduct,
   adminFetchProducts,
+  adminGenerateDescription,
   adminSaveProduct,
   fetchCategories,
   uploadImage,
+  type GenerateDescriptionResponse,
 } from "@/lib/api";
 import { formatPKR, slugify } from "@/lib/format";
 import { useRoute } from "@/lib/router";
@@ -111,6 +114,12 @@ export function AdminProducts() {
   const [detectedLabel, setDetectedLabel] = useState<string | null>(null);
   const catTouched = useRef(false); // set when the admin manually picks a category
   const lastDetectKey = useRef(""); // "name|desc" of the last auto-detect run
+  // AI description generation state
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [seoInfo, setSeoInfo] = useState<GenerateDescriptionResponse | null>(null);
+  const descTouched = useRef(false); // set when the admin types their own description
+  const lastGenKey = useRef(""); // product name of the last auto-generation attempt
+  const variationRef = useRef(1); // regenerate → different angle each click
 
   const load = async () => {
     setLoading(true);
@@ -168,9 +177,10 @@ export function AdminProducts() {
     []
   );
 
-  // Auto-detect while typing a NEW product's name (debounced, never overrides a manual pick)
+  // Auto-detect while typing a NEW product's name (debounced, never overrides a manual pick,
+  // and stops once a category has been assigned)
   useEffect(() => {
-    if (!editing || editing.id || catTouched.current) return;
+    if (!editing || editing.id || catTouched.current || editing.categoryId) return;
     const name = editing.name.trim();
     const desc = editing.description.trim();
     if (name.length < 4) return;
@@ -194,10 +204,107 @@ export function AdminProducts() {
     void runDetect(editing.name, editing.description);
   };
 
+  /** AI-write an SEO-optimized description and fill the textarea. */
+  const runGenerateDesc = useCallback(
+    async (
+      src: {
+        name: string;
+        categoryId: string;
+        subcategoryId: string;
+        type: "BUY_NOW" | "CUSTOM_ORDER";
+        price: string;
+        description: string;
+      },
+      variation: number
+    ) => {
+      setGeneratingDesc(true);
+      try {
+        // short existing text = the admin's notes → use as hints for the writer
+        const notes = src.description.trim();
+        const hints = notes.length > 0 && notes.length < 120 ? notes : undefined;
+        const res = await adminGenerateDescription({
+          name: src.name.trim(),
+          categoryId: src.categoryId || null,
+          subcategoryId: src.subcategoryId || null,
+          type: src.type,
+          price: src.price ? Number(src.price) : null,
+          hints,
+          variation,
+        });
+        setEditing((s) => (s ? { ...s, description: res.description } : s));
+        setSeoInfo(res);
+        if (res.method === "ai") {
+          toast.success("AI wrote an SEO-optimized description", {
+            description: `${res.wordCount} words · ${res.keywords.length} ranking keywords built in. Edit freely.`,
+          });
+        } else {
+          toast.info("Description generated", {
+            description: "AI was busy — an SEO template was used. Try Regenerate for a fresh AI draft.",
+          });
+        }
+      } catch {
+        toast.error("AI description failed", { description: "Write it manually or try again." });
+      } finally {
+        setGeneratingDesc(false);
+      }
+    },
+    []
+  );
+
+  // Auto-write the description for a NEW product once the name settles
+  // (debounced 2.5s, only while empty, never after manual typing or a failed attempt)
+  useEffect(() => {
+    if (!editing || editing.id || descTouched.current || generatingDesc) return;
+    const name = editing.name.trim();
+    if (name.length < 6 || editing.description.trim()) return;
+    if (name === lastGenKey.current) return;
+    const t = setTimeout(() => {
+      lastGenKey.current = name;
+      void runGenerateDesc(
+        {
+          name,
+          categoryId: editing.categoryId,
+          subcategoryId: editing.subcategoryId,
+          type: editing.type,
+          price: editing.price,
+          description: "",
+        },
+        1
+      );
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [editing, generatingDesc, runGenerateDesc]);
+
+  const generateDescNow = () => {
+    if (!editing || !editing.name.trim()) {
+      toast.error("Type a product name first");
+      return;
+    }
+    variationRef.current += 1;
+    descTouched.current = false; // fresh AI text may replace what's there
+    lastGenKey.current = editing.name.trim();
+    setSeoInfo(null);
+    void runGenerateDesc(
+      {
+        name: editing.name,
+        categoryId: editing.categoryId,
+        subcategoryId: editing.subcategoryId,
+        type: editing.type,
+        price: editing.price,
+        description: editing.description,
+      },
+      variationRef.current
+    );
+  };
+
   const openNew = () => {
     catTouched.current = false;
     lastDetectKey.current = "";
     setDetectedLabel(null);
+    descTouched.current = false;
+    lastGenKey.current = "";
+    variationRef.current = 1;
+    setSeoInfo(null);
     setEditing({ ...emptyProduct, categoryId: "" });
     setImgUrlInput("");
     setEditOpen(true);
@@ -207,6 +314,10 @@ export function AdminProducts() {
     catTouched.current = true; // existing products: never override their category automatically
     lastDetectKey.current = "";
     setDetectedLabel(null);
+    descTouched.current = true; // existing products: never auto-rewrite their description
+    lastGenKey.current = "";
+    variationRef.current = 1;
+    setSeoInfo(null);
     setEditing({
       id: p.id,
       name: p.name,
@@ -505,8 +616,57 @@ export function AdminProducts() {
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label>Description *</Label>
-                  <Textarea rows={4} value={editing.description} onChange={(e) => setEditing((s) => (s ? { ...s, description: e.target.value } : s))} />
+                  <div className="flex items-center justify-between">
+                    <Label>Description *</Label>
+                    <div className="flex items-center gap-2">
+                      {generatingDesc && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Writing…
+                        </span>
+                      )}
+                      {!generatingDesc && seoInfo?.method === "ai" && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Sparkles className="h-3 w-3" aria-hidden="true" /> AI-written
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={generateDescNow}
+                        disabled={generatingDesc || !editing.name.trim()}
+                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+                      >
+                        {generatingDesc ? (
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Wand2 className="h-3 w-3" aria-hidden="true" />
+                        )}
+                        {editing.description.trim() ? "Regenerate" : "Write with AI"}
+                      </button>
+                    </div>
+                  </div>
+                  <Textarea
+                    rows={8}
+                    value={editing.description}
+                    onChange={(e) => {
+                      descTouched.current = true;
+                      setSeoInfo(null);
+                      setEditing((s) => (s ? { ...s, description: e.target.value } : s));
+                    }}
+                    placeholder="AI writes this automatically from the product name — or type your own notes and hit Write with AI."
+                  />
+                  {seoInfo ? (
+                    <p className="flex items-start gap-1 text-xs text-zinc-400">
+                      <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+                      <span>
+                        SEO-ready: {seoInfo.wordCount} words · keywords: {seoInfo.keywords.slice(0, 4).join(", ")}
+                        {seoInfo.keywords.length > 4 ? ` +${seoInfo.keywords.length - 4} more` : ""}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-zinc-400">
+                      Auto-written from the product name with ranking keywords — edit freely.
+                    </p>
+                  )}
                 </div>
 
                 {/* Images */}

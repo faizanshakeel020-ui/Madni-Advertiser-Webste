@@ -191,6 +191,32 @@ export async function adminCategorizeProduct(
   });
 }
 
+export type GenerateDescriptionResponse = {
+  description: string;
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string[];
+  wordCount: number;
+  method: string;
+};
+
+/** AI-write an SEO-optimized product description. */
+export async function adminGenerateDescription(data: {
+  name: string;
+  categoryId?: string | null;
+  subcategoryId?: string | null;
+  type?: "BUY_NOW" | "CUSTOM_ORDER";
+  price?: number | null;
+  hints?: string;
+  variation?: number;
+}): Promise<GenerateDescriptionResponse> {
+  return jsonFetch("/api/admin/generate-description", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 export async function adminFetchOrders(): Promise<Order[]> {
   return jsonFetch("/api/admin/orders");
 }

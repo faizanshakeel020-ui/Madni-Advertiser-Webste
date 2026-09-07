@@ -247,7 +247,7 @@ export function ProductDetailView({ slug }: { slug: string }) {
               )}
             </div>
 
-            <p className="mt-5 leading-relaxed text-zinc-600">{product.description}</p>
+            <div className="mt-5 whitespace-pre-line text-[15px] leading-relaxed text-zinc-600">{product.description}</div>
 
             <Separator className="my-6" />
 

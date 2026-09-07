@@ -257,3 +257,20 @@ Work Log:
 
 Stage Summary:
 - Hero arrows restored to classic split layout: LEFT arrow on the left edge, RIGHT arrow on the right edge, vertically centered — while keeping the hero text fully readable on load (caption padded inward so arrows never cover text at any viewport/hero height)
+
+---
+Task ID: 15-ai-desc
+Agent: Z.ai Code (main agent)
+Task: Product add karte waqt description likhne mein time lagta tha — AI auto-generate the product description, SEO-optimized so it ranks top
+
+Work Log:
+- src/lib/describe.ts (new, server-only): generateProductDescription() — z-ai-web-dev-sdk LLM writes an SEO-optimized description using a top-ranking-style prompt: exact product name in the first sentence (primary keyword), category/subcategory as secondary keywords, long-tail phrases ("custom ... in Lahore", "buy ... online in Pakistan"), 150-220 words in 3 paragraphs + up to 4 "• " feature bullets, benefit-led copy, type-aware CTA (Buy Now → order/delivery/COD; Custom Order → free quote + design support); also returns metaTitle (≤60 chars), metaDescription (≤160 chars) and 6-8 lowercase keywords; cleanProse() strips fences/headings/bold/emoji and forces bullets onto own lines; 30s timeout; deterministic template fallback (method:"template") so admin is never blocked; resolves category/subcategory names from DB for keyword context; accepts admin notes as hints + variation counter for regenerate
+- /api/admin/generate-description (new POST, admin-auth): validates name, type, price, variation (1-20); tested via curl → method:"ai", 204-word description with keywords
+- api.ts: adminGenerateDescription() client helper + GenerateDescriptionResponse type
+- admin-products.tsx: Description field now has a gold-outline "Write with AI" button (Wand2 icon → Loader2 while "Writing…"); AUTO-WRITES the description for a NEW product once the name settles (2.5s debounce, only while empty, never after manual typing, no retry loop on failure via lastGenKey ref); "Regenerate" label when text exists — each click increments variation for a fresh angle; short admin notes (<120 chars) are passed as hints so AI incorporates them (verified: "red acrylic, 24 inch, glowing border" → "premium red acrylic and a stunning glowing border"); "AI-written" gold hint + "SEO-ready: N words · keywords: ..." line under the textarea; manual textarea typing sets descTouched → auto-gen disabled; openEdit never auto-rewrites existing descriptions; category auto-detect effect now stops once a category is assigned (avoids redundant re-detect toasts when the description fills)
+- product-detail-view.tsx: description now renders with whitespace-pre-line (multi-paragraph + bullets display properly instead of one collapsed paragraph)
+- E2E browser-verified: Add Product → typed "Bakery Display Chiller Top LED Sign" → category auto-assigned (LED & Illuminated Signs) + AI description auto-written (name first, Lahore/Pakistan keywords, 4 bullets, quote CTA) → image URL → Create → product page renders paragraphs + bullets → edit → typed notes → Regenerate → new variation incorporating notes → test product deleted; VLM-verified dialog (AI-written hint, Regenerate button, SEO-ready line); VLM "overlap" claim disproven via DOM measurement (elements in different grid columns); 0 page/console errors; lint 0 errors; dev.log all 200s (generate-description 4.6s/6.3s LLM latency)
+
+Stage Summary:
+- Adding a product now needs NO manual writing: type the name → category + subcategory auto-assigned AND an SEO-optimized description auto-written (primary keyword first, location + long-tail keywords, feature bullets, type-aware CTA); "Write with AI / Regenerate" button for manual control with variation; admin notes become AI hints; SEO meta info (title/description/keywords) shown in the form; template fallback keeps the flow working if AI is down
+- New: src/lib/describe.ts, /api/admin/generate-description; modified: api.ts, admin-products.tsx, product-detail-view.tsx
