@@ -146,3 +146,19 @@ Work Log:
 Stage Summary:
 - Full theme conversion to grey/black/golden: primary gold oklch(0.72 0.125 83) (light) / oklch(0.8 0.14 85) (dark), gold-foreground dark text, gold-tinted accents
 - All product/type/discount badges unified to gold+black; semantic colors (WhatsApp green, success green, destructive red) retained
+
+---
+Task ID: 9-shop-dropdown
+Agent: Z.ai Code (main agent)
+Task: Add Shop dropdown in navbar like the Services mega menu
+
+Work Log:
+- constants.ts: NAV_LINKS Shop entry now has menu: "shop"; Services uses menu: "services" (replaced mega flag)
+- header.tsx: megaOpen boolean → openMenu: "services" | "shop" | null state; header fetches categories via fetchCategories (same as footer)
+- Desktop: SHOP nav button now shows chevron + opens on hover; Shop panel = white dropdown below black bar with "Shop by Category" heading, "BROWSE FULL SHOP →" top-right link, 4-col grid of 8 category image cards (category photo + dark gradient + name/product-count overlay, hover zoom)
+- Services mega menu unchanged; both panels close on header mouseLeave / route change
+- Mobile sheet: added "Shop Categories" accordion below Services accordion — 8 categories with thumbnail images + Browse Full Shop link
+- Lint: 0 errors. Browser-verified: hover SHOP → panel opens (VLM confirmed 8 category cards, no broken images); click "3D Letter Signs" → #/shop?cat=3d-letters; Services menu still opens on hover; mobile accordion expands showing all 8 categories + LED click → #/shop?cat=led-signs; 0 console/page errors
+
+Stage Summary:
+- Shop dropdown live: desktop hover dropdown (8 category image cards) + mobile Shop Categories accordion; Services menu behavior preserved

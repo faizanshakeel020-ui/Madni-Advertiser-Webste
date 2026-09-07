@@ -25,19 +25,34 @@ import { SERVICES } from "@/lib/services-data";
 import { useRoute } from "@/lib/router";
 import { useCart, cartCount } from "@/store/cart";
 import { useMounted } from "@/lib/use-mounted";
+import { fetchCategories } from "@/lib/api";
+import type { Category } from "@/lib/types";
+
+type Menu = "services" | "shop" | null;
 
 export function Header() {
   const { route, navigate } = useRoute();
-  const [megaOpen, setMegaOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<Menu>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cats, setCats] = useState<Category[]>([]);
   const items = useCart((s) => s.items);
   const count = cartCount(items);
   const mounted = useMounted();
 
+  useEffect(() => {
+    let alive = true;
+    fetchCategories()
+      .then((c) => alive && setCats(c))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // close overlays when route changes (back/forward hash navigation)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing UI with external hash route
-    setMegaOpen(false);
+    setOpenMenu(null);
     setMobileOpen(false);
   }, [route.path, route.query.q, route.query.cat]);
 
@@ -86,7 +101,7 @@ export function Header() {
       {/* ---------- Main nav bar (black, sticky) ---------- */}
       <header
         className="sticky top-0 z-50 bg-zinc-950 shadow-md"
-        onMouseLeave={() => setMegaOpen(false)}
+        onMouseLeave={() => setOpenMenu(null)}
       >
         <div className="container-site flex h-12 items-center justify-between gap-4 lg:h-14">
           <div className="flex items-center gap-8">
@@ -163,6 +178,36 @@ export function Header() {
                         ))}
                       </AccordionContent>
                     </AccordionItem>
+                    <AccordionItem value="shop" className="border-b">
+                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
+                        Shop Categories
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-2">
+                        {cats.map((c) => (
+                          <button
+                            key={c.slug}
+                            onClick={() => navigate(`/shop?cat=${c.slug}`)}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                          >
+                            <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+                              <img
+                                src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </span>
+                            {c.name}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => navigate("/shop")}
+                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
+                        >
+                          Browse Full Shop →
+                        </button>
+                      </AccordionContent>
+                    </AccordionItem>
                   </Accordion>
 
                   <div className="space-y-2 pt-2">
@@ -182,26 +227,26 @@ export function Header() {
             {/* Desktop nav — uppercase corporate style */}
             <nav className="hidden items-center gap-7 lg:flex" aria-label="Main navigation">
               {NAV_LINKS.map((link) =>
-                link.mega ? (
+                link.menu ? (
                   <button
                     key={link.href}
-                    onMouseEnter={() => setMegaOpen(true)}
+                    onMouseEnter={() => setOpenMenu(link.menu)}
                     onClick={() => navigate(link.href)}
                     className={`flex items-center gap-1 text-[13px] font-semibold uppercase tracking-widest transition-colors ${
                       isActive(link.href)
                         ? "text-primary"
                         : "text-white hover:text-zinc-300"
                     }`}
-                    aria-expanded={megaOpen}
+                    aria-expanded={openMenu === link.menu}
                     aria-haspopup="true"
                   >
                     {link.label}
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${megaOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openMenu === link.menu ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
                 ) : (
                   <button
                     key={link.href}
-                    onMouseEnter={() => setMegaOpen(false)}
+                    onMouseEnter={() => setOpenMenu(null)}
                     onClick={() => navigate(link.href)}
                     className={`text-[13px] font-semibold uppercase tracking-widest transition-colors ${
                       isActive(link.href)
@@ -259,11 +304,11 @@ export function Header() {
           </div>
         </div>
 
-        {/* ---------- Mega menu (desktop) ---------- */}
-        {megaOpen && (
+        {/* ---------- Dropdown menus (desktop) ---------- */}
+        {openMenu === "services" && (
           <div
             className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
-            onMouseEnter={() => setMegaOpen(true)}
+            onMouseEnter={() => setOpenMenu("services")}
           >
             <div className="container-site grid grid-cols-5 gap-8 py-8">
               {SERVICES.slice(0, 4).map((s) => (
@@ -306,6 +351,51 @@ export function Header() {
                   <p className="text-xs text-zinc-300">Custom booths for expos & events</p>
                 </div>
               </button>
+            </div>
+          </div>
+        )}
+
+        {openMenu === "shop" && (
+          <div
+            className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
+            onMouseEnter={() => setOpenMenu("shop")}
+          >
+            <div className="container-site py-8">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
+                  Shop by Category
+                </p>
+                <button
+                  onClick={() => navigate("/shop")}
+                  className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+                >
+                  Browse Full Shop →
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                {cats.slice(0, 8).map((c) => (
+                  <button
+                    key={c.slug}
+                    onClick={() => navigate(`/shop?cat=${c.slug}`)}
+                    className="group relative overflow-hidden rounded-xl text-left"
+                    aria-label={`Shop ${c.name}`}
+                  >
+                    <img
+                      src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+                      alt={c.name}
+                      className="h-28 w-full object-cover img-zoom"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent" aria-hidden="true" />
+                    <div className="absolute bottom-0 w-full p-3">
+                      <p className="font-display text-[13px] font-bold leading-tight text-white">{c.name}</p>
+                      {typeof c.productCount === "number" && (
+                        <p className="mt-0.5 text-[11px] text-zinc-300">{c.productCount} products</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
