@@ -205,3 +205,23 @@ Stage Summary:
 - Shop mega menu now shows photo thumbnails on categories + gold icons on subcategories, zero item counts (desktop + mobile)
 - Adding a product auto-assigns category AND subcategory via AI (z-ai-web-dev-sdk LLM with keyword fallback) — debounced live auto-fill while typing, manual Detect button, server-side fallback on create; admin never has to pick manually
 - New: src/lib/category-icons.ts, src/lib/categorize.ts, /api/admin/categorize; modified: header.tsx, admin-products.tsx, api.ts, /api/admin/products POST
+
+---
+Task ID: 12-hero-text-up
+Agent: Z.ai Code (main agent)
+Task: Hero text was too low / cut off below the fold — move it up so it's clearly readable when the website opens
+
+Work Log:
+- Diagnosed with VLM + getBoundingClientRect at 1280x577 viewport: hero was fixed 460/560/660px tall; header (152px) + 660px hero pushed the bottom-anchored caption below the viewport — h1 bottom (601px) exceeded viewport height (577px), CTAs fully hidden
+- home-view.tsx hero fixes:
+  - Hero height now viewport-fitted: h-[calc(100svh-128px)] sm:h-[calc(100svh-144px)] lg:h-[calc(100svh-152px)] with min-h-[400px] max-h-[620px] (subtracts utility bar + nav bar heights per breakpoint) — the whole hero including caption fits the screen on open, any viewport height
+  - Caption (eyebrow/title/subtitle/CTAs) stays bottom-left but now always above the fold; added pr-14 sm:pr-20 so text never reaches the right-edge arrow zone
+  - Circular translucent arrows moved from split left/right at vertical center → stacked vertical pair on the RIGHT edge (right-4 top-1/2) — prevents overlap with the caption at the new shorter hero heights (previously a left-center arrow would collide with the title on short heroes)
+  - Dots stay bottom-center; bottom gradient unchanged
+- Browser-verified at 4 viewports: 1280x577 (h1 y258-366 ✓ visible, CTA bottom 514 < 577 ✓), 1280x800 (CTA bottom 709 < 800 ✓), 1920x1080 ✓, 390x844 mobile (h1 y515-569 ✓, CTA 637 < 844 ✓, arrows y394-434 no text overlap)
+- VLM verified both desktop + mobile screenshots: title fully visible, not cut off; eyebrow/title/subtitle/CTAs clearly readable; arrows don't overlap text; comfortable bottom padding
+- Slider arrows tested (next/prev switch slides, title changes, stays visible); 0 page errors, 0 console errors; lint 0 errors; dev.log all 200s
+
+Stage Summary:
+- Hero now fills exactly the open viewport (minus header) instead of a fixed 660px, so the headline text + CTA buttons are always fully visible and readable the moment the site opens — on any screen height (short preview panels, laptops, desktops, mobile)
+- Arrows restacked on the right edge to stay collision-free at the new adaptive hero height
