@@ -60,6 +60,7 @@ type EditState = {
   oldPrice: string;
   type: "BUY_NOW" | "CUSTOM_ORDER";
   categoryId: string;
+  subcategoryId: string;
   images: string[];
   specs: ProductSpec[];
   options: ProductOption[];
@@ -76,6 +77,7 @@ const emptyProduct: EditState = {
   oldPrice: "",
   type: "CUSTOM_ORDER",
   categoryId: "",
+  subcategoryId: "",
   images: [],
   specs: [],
   options: [],
@@ -141,6 +143,7 @@ export function AdminProducts() {
       oldPrice: p.oldPrice === null ? "" : String(p.oldPrice),
       type: p.type,
       categoryId: p.categoryId,
+      subcategoryId: p.subcategoryId ?? "",
       images: [...p.images],
       specs: p.specs.map((s) => ({ ...s })),
       options: p.options.map((o) => ({ ...o, values: [...o.values] })),
@@ -174,6 +177,7 @@ export function AdminProducts() {
         oldPrice: editing.oldPrice ? Number(editing.oldPrice) : null,
         type: editing.type,
         categoryId: editing.categoryId,
+        subcategoryId: editing.subcategoryId || null,
         images: editing.images,
         specs: editing.specs.filter((s) => s.label && s.value),
         options: editing.options.filter((o) => o.label && o.values.filter(Boolean).length > 0),
@@ -330,7 +334,12 @@ export function AdminProducts() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Category *</Label>
-                  <Select value={editing.categoryId} onValueChange={(v) => setEditing((s) => (s ? { ...s, categoryId: v } : s))}>
+                  <Select
+                    value={editing.categoryId}
+                    onValueChange={(v) =>
+                      setEditing((s) => (s ? { ...s, categoryId: v, subcategoryId: "" } : s))
+                    }
+                  >
                     <SelectTrigger className="w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
                     <SelectContent>
                       {cats.map((c) => (
@@ -338,6 +347,23 @@ export function AdminProducts() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Subcategory</Label>
+                  <Select
+                    value={editing.subcategoryId || "none"}
+                    onValueChange={(v) => setEditing((s) => (s ? { ...s, subcategoryId: v === "none" ? "" : v } : s))}
+                    disabled={!editing.subcategoryId && (cats.find((c) => c.id === editing.categoryId)?.subcategories?.length ?? 0) === 0}
+                  >
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Optional" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No subcategory</SelectItem>
+                      {(cats.find((c) => c.id === editing.categoryId)?.subcategories ?? []).map((sub) => (
+                        <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-zinc-400">Optional — used by the Shop menu dropdown filters.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Type *</Label>

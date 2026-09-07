@@ -53,6 +53,7 @@ export function ShopView() {
   const [searchText, setSearchText] = useState(q.q ?? "");
 
   const activeCat = q.cat ?? "";
+  const activeSub = q.sub ?? "";
   const activeType = q.type ?? "";
   const activeSort = q.sort ?? "popular";
   const activeMin = q.min ?? "";
@@ -64,6 +65,7 @@ export function ShopView() {
 
   const queryParams = {
     cat: activeCat || undefined,
+    sub: activeSub || undefined,
     q: activeQ || undefined,
     type: activeType || undefined,
     min: activeMin ? Number(activeMin) : undefined,
@@ -82,6 +84,16 @@ export function ShopView() {
     if (value === undefined || value === "") delete next[key];
     else next[key] = value;
     if (key !== "page" && key !== "sort") delete next.page; // reset pagination on filter change
+    navigate(withQuery("/shop", next), { replace: true });
+  };
+
+  // Changing category must also drop the active subcategory (it belongs to the old category)
+  const setCat = (slug?: string) => {
+    const next: Record<string, string | undefined> = { ...q };
+    if (slug) next.cat = slug;
+    else delete next.cat;
+    delete next.sub;
+    delete next.page;
     navigate(withQuery("/shop", next), { replace: true });
   };
 
@@ -118,7 +130,7 @@ export function ShopView() {
       : activeMin === String(b.min) && (b.max === undefined ? !activeMax : activeMax === String(b.max))
   );
 
-  const hasFilters = Boolean(activeCat || activeType || activeMin || activeMax || activeQ || activeSort !== "popular");
+  const hasFilters = Boolean(activeCat || activeSub || activeType || activeMin || activeMax || activeQ || activeSort !== "popular");
   const loading = isPending;
   const items: Product[] = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -127,12 +139,14 @@ export function ShopView() {
   const filterProps = {
     cats: cats ?? [],
     activeCat,
+    activeSub,
     activeType,
     activeMin,
     activeMax,
     activeBucketIdx,
     hasFilters,
     setParam,
+    setCat,
     setPriceBucket,
     navigate,
   };
@@ -230,12 +244,19 @@ export function ShopView() {
             </div>
 
             {/* Active filter chips */}
-            {(activeCat || activeQ || activeType || activeBucketIdx >= 0) && (
+            {(activeCat || activeSub || activeQ || activeType || activeBucketIdx >= 0) && (
               <div className="mb-5 flex flex-wrap gap-2">
                 {activeCat && (
-                  <button onClick={() => setParam("cat", "")}>
+                  <button onClick={() => setCat()}>
                     <Badge variant="secondary" className="gap-1.5 bg-zinc-100 py-1.5 pl-3 pr-2 text-zinc-700 hover:bg-zinc-200">
                       {(cats ?? []).find((c) => c.slug === activeCat)?.name ?? activeCat} <X className="h-3 w-3" aria-hidden="true" />
+                    </Badge>
+                  </button>
+                )}
+                {activeSub && (
+                  <button onClick={() => setParam("sub", "")}>
+                    <Badge variant="secondary" className="gap-1.5 bg-accent py-1.5 pl-3 pr-2 text-accent-foreground hover:bg-accent">
+                      {(cats ?? []).find((c) => c.slug === activeCat)?.subcategories?.find((s) => s.slug === activeSub)?.name ?? activeSub} <X className="h-3 w-3" aria-hidden="true" />
                     </Badge>
                   </button>
                 )}
@@ -346,21 +367,25 @@ export function ShopView() {
 function ShopFilters({
   cats,
   activeCat,
+  activeSub,
   activeType,
   activeBucketIdx,
   hasFilters,
   setParam,
+  setCat,
   setPriceBucket,
   navigate,
 }: {
   cats: Category[];
   activeCat: string;
+  activeSub: string;
   activeType: string;
   activeMin: string;
   activeMax: string;
   activeBucketIdx: number;
   hasFilters: boolean;
   setParam: (key: string, value?: string) => void;
+  setCat: (slug?: string) => void;
   setPriceBucket: (bucket: (typeof PRICE_BUCKETS)[number]) => void;
   navigate: (to: string, opts?: { replace?: boolean }) => void;
 }) {
@@ -373,7 +398,7 @@ function ShopFilters({
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-wider text-zinc-900">Category</h3>
         <div className="space-y-1">
           <button
-            onClick={() => setParam("cat", "")}
+            onClick={() => setCat()}
             className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
               !activeCat ? "bg-accent font-bold text-accent-foreground" : "text-zinc-600 hover:bg-zinc-100"
             }`}
@@ -383,7 +408,7 @@ function ShopFilters({
           {cats.map((c) => (
             <button
               key={c.id}
-              onClick={() => setParam("cat", c.slug)}
+              onClick={() => setCat(c.slug)}
               className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
                 activeCat === c.slug ? "bg-accent font-bold text-accent-foreground" : "text-zinc-600 hover:bg-zinc-100"
               }`}
@@ -394,6 +419,40 @@ function ShopFilters({
           ))}
         </div>
       </div>
+
+      {/* Subcategories of the active category */}
+      {activeCatObj && activeCatObj.subcategories && activeCatObj.subcategories.length > 0 && (
+        <>
+          <Separator />
+          <div>
+            <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
+              Subcategories
+            </h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => setParam("sub", "")}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
+                  !activeSub ? "bg-accent font-bold text-accent-foreground" : "text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                All {activeCatObj.name}
+              </button>
+              {activeCatObj.subcategories.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setParam("sub", s.slug)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
+                    activeSub === s.slug ? "bg-accent font-bold text-accent-foreground" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {s.name}
+                  <span className="text-xs text-zinc-400">{s.productCount ?? 0}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <Separator />
 

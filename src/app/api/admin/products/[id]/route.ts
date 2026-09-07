@@ -21,6 +21,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (dupe) return NextResponse.json({ error: `Slug "${slug}" already exists` }, { status: 400 });
     }
 
+    const finalCategoryId = b.categoryId ? String(b.categoryId) : existing.categoryId;
+
+    // Subcategory: keep existing if not sent, clear if emptied, validate it belongs to the final category
+    let subcategoryId: string | null | undefined =
+      b.subcategoryId === undefined ? existing.subcategoryId ?? null : b.subcategoryId ? String(b.subcategoryId) : null;
+    if (subcategoryId) {
+      const sub = await db.subcategory.findUnique({ where: { id: subcategoryId } });
+      if (!sub || sub.categoryId !== finalCategoryId) subcategoryId = null;
+    }
+
     const product = await db.product.update({
       where: { id },
       data: {
@@ -33,7 +43,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             ? null
             : Number(b.oldPrice),
         type: b.type === "BUY_NOW" ? "BUY_NOW" : "CUSTOM_ORDER",
-        categoryId: b.categoryId ? String(b.categoryId) : existing.categoryId,
+        categoryId: finalCategoryId,
+        subcategoryId: subcategoryId ?? null,
         images: JSON.stringify(Array.isArray(b.images) ? b.images : JSON.parse(existing.images || "[]")),
         specs: JSON.stringify(Array.isArray(b.specs) ? b.specs : JSON.parse(existing.specs || "[]")),
         options: JSON.stringify(Array.isArray(b.options) ? b.options : JSON.parse(existing.options || "[]")),

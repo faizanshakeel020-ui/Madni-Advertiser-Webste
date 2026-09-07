@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const params = req.nextUrl.searchParams;
     const cat = params.get("cat") ?? undefined;
+    const sub = params.get("sub") ?? undefined;
     const q = params.get("q") ?? undefined;
     const type = params.get("type") ?? undefined;
     const min = params.get("min");
@@ -20,6 +21,10 @@ export async function GET(req: NextRequest) {
     if (cat) {
       const category = await db.category.findUnique({ where: { slug: cat } });
       where.categoryId = category?.id ?? "none";
+    }
+    if (sub) {
+      const subcat = await db.subcategory.findUnique({ where: { slug: sub } });
+      where.subcategoryId = subcat?.id ?? "none";
     }
     if (q) {
       where.OR = [

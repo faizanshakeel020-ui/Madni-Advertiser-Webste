@@ -162,3 +162,25 @@ Work Log:
 
 Stage Summary:
 - Shop dropdown live: desktop hover dropdown (8 category image cards) + mobile Shop Categories accordion; Services menu behavior preserved
+
+---
+Task ID: 10-shop-subcategories
+Agent: Z.ai Code (main agent)
+Task: Shop dropdown mega menu — add a categories navbar where selecting a category shows its related subcategories
+
+Work Log:
+- Prisma schema: new Subcategory model (id/slug/name/categoryId/sortOrder, FK→Category, Product[]); Category.subcategories back-relation; Product.subcategoryId (nullable FK → Subcategory)
+- bun run db:push (non-destructive, new table + nullable column); dev server restarted because in-memory Prisma client was stale (Unknown field `subcategories` error gone after restart)
+- scripts/seed-subcategories.ts (idempotent): 23 subcategories across all 8 categories, all 23 existing products assigned; taxonomy: LED/Desk/Wall Name Plates; Backlit Panels, Window Signs; Chrome/Mini-LED/Steel Letters; Reception, Door Signs, Glass Decals, Wayfinding; Video Walls, Menu Boards, Poster Displays; Snap Frames, ACP, Flex Boards; Vinyl + Event Banners; Calligraphy/Name-Couple/Quote Neon
+- API: /api/categories now includes subcategories (sorted, with productCount via _count); /api/products supports ?sub=<slug> filter; admin POST/PUT products persist subcategoryId with ownership validation (sub must belong to final category; category change clears stale sub)
+- mapProduct (admin-auth.ts) + types.ts + api.ts client: subcategoryId on Product, Subcategory type, sub query param
+- header.tsx Shop mega menu redesigned: 3-column panel — (1) LEFT vertical navbar showing ONLY category names (hover/focus selects, click navigates /shop?cat=), zinc-50 rounded container, active row white+shadow+gold count, (2) MIDDLE panel showing selected category name/description + subcategory buttons in 2-col grid (border cards, gold hover, item counts, click → /shop?cat=X&sub=Y), View All link, empty-state fallback, (3) RIGHT category promo image card (gradient, gold product-count badge, Shop Now →)
+- activeShopCat derives: hovered shopCat → current route cat → first category (auto preselects active category); route-change effect also closes menu on sub param change
+- Mobile drawer: Shop Categories accordion now nests subcategory links (indented, gold hover) under each category row
+- shop-view.tsx: activeSub query param → API filter + gold subcategory chip (X to clear); sidebar SUBCATEGORIES section (All X + subs with counts) shown for active category; setCat() helper clears sub when switching categories; hasFilters includes sub
+- admin-products.tsx: cascading Subcategory select (No subcategory sentinel + subs of chosen category, disabled when none); changing category resets sub; save passes subcategoryId (verified full cycle: edit → change to Glass Decals → save → API shows move → revert → save → original state restored)
+- Lint: 0 errors
+- Browser-verified (agent-browser + VLM): mega menu opens on SHOP hover — left navbar lists all 8 categories only; hovering Office Signage switches middle panel to its 4 subcategories; right image card renders after fixing accidental `hidden` class; clicking Door Signs → #/shop?cat=office-signage&sub=door-signs with 1 product + both chips; sidebar subcategory click switches sub; category click clears sub param; mobile drawer accordion shows nested subs, tapping Islamic Calligraphy Neon → #/shop?cat=neon-art&sub=calligraphy-neon; fresh reload = 0 console/page errors, dev.log clean (all 200s)
+
+Stage Summary:
+- Full subcategory system: DB model + seed (23 subs, all products mapped) + API filters + Shop mega menu (left categories navbar → hover shows subcategories panel → click filters shop) + mobile nested accordion + shop sidebar/chips + admin cascading select

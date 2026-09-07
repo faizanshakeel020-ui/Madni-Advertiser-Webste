@@ -24,6 +24,7 @@ async function jsonFetch<T>(input: string, init?: RequestInit): Promise<T> {
 
 export type ProductQuery = {
   cat?: string;
+  sub?: string;
   q?: string;
   type?: string;
   min?: number;
@@ -37,6 +38,7 @@ export type ProductQuery = {
 export async function fetchProducts(query: ProductQuery): Promise<ProductListResponse> {
   const params = new URLSearchParams();
   if (query.cat) params.set("cat", query.cat);
+  if (query.sub) params.set("sub", query.sub);
   if (query.q) params.set("q", query.q);
   if (query.type) params.set("type", query.type);
   if (query.min !== undefined) params.set("min", String(query.min));

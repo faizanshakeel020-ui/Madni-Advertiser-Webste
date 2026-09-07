@@ -3,6 +3,15 @@ export type ProductType = "BUY_NOW" | "CUSTOM_ORDER";
 export type ProductSpec = { label: string; value: string };
 export type ProductOption = { label: string; values: string[] };
 
+export type Subcategory = {
+  id: string;
+  slug: string;
+  name: string;
+  categoryId: string;
+  sortOrder: number;
+  productCount?: number;
+};
+
 export type Category = {
   id: string;
   slug: string;
@@ -11,6 +20,7 @@ export type Category = {
   image: string | null;
   sortOrder: number;
   productCount?: number;
+  subcategories?: Subcategory[];
 };
 
 export type Product = {
@@ -22,6 +32,7 @@ export type Product = {
   oldPrice: number | null;
   type: ProductType;
   categoryId: string;
+  subcategoryId?: string | null;
   category?: Pick<Category, "id" | "slug" | "name">;
   images: string[];
   specs: ProductSpec[];

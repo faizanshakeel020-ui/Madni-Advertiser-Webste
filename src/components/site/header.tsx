@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export function Header() {
   const [openMenu, setOpenMenu] = useState<Menu>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cats, setCats] = useState<Category[]>([]);
+  const [shopCat, setShopCat] = useState("");
   const items = useCart((s) => s.items);
   const count = cartCount(items);
   const mounted = useMounted();
@@ -54,10 +55,16 @@ export function Header() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing UI with external hash route
     setOpenMenu(null);
     setMobileOpen(false);
-  }, [route.path, route.query.q, route.query.cat]);
+  }, [route.path, route.query.q, route.query.cat, route.query.sub]);
 
   const isActive = (href: string) =>
     href === "/" ? route.path === "/" : route.path.startsWith(href);
+
+  // Active category inside the Shop mega menu: user-hovered → current shop category → first
+  const activeShopCat =
+    cats.find((c) => c.slug === shopCat) ??
+    cats.find((c) => c.slug === route.query.cat) ??
+    cats[0];
 
   return (
     <>
@@ -184,21 +191,34 @@ export function Header() {
                       </AccordionTrigger>
                       <AccordionContent className="pb-2">
                         {cats.map((c) => (
-                          <button
-                            key={c.slug}
-                            onClick={() => navigate(`/shop?cat=${c.slug}`)}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
-                          >
-                            <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
-                              <img
-                                src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
-                                alt=""
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            </span>
-                            {c.name}
-                          </button>
+                          <div key={c.slug} className="mb-1">
+                            <button
+                              onClick={() => navigate(`/shop?cat=${c.slug}`)}
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                            >
+                              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+                                <img
+                                  src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              </span>
+                              <span className="flex-1">{c.name}</span>
+                              <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+                            </button>
+                            <div className="ml-5 border-l-2 border-zinc-100 pl-2">
+                              {c.subcategories?.map((sub) => (
+                                <button
+                                  key={sub.slug}
+                                  onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
+                                  className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                                >
+                                  {sub.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                         <button
                           onClick={() => navigate("/shop")}
@@ -360,7 +380,7 @@ export function Header() {
             className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
             onMouseEnter={() => setOpenMenu("shop")}
           >
-            <div className="container-site py-8">
+            <div className="container-site py-6">
               <div className="mb-4 flex items-center justify-between">
                 <p className="font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
                   Shop by Category
@@ -372,29 +392,113 @@ export function Header() {
                   Browse Full Shop →
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-4">
-                {cats.slice(0, 8).map((c) => (
+              <div className="grid grid-cols-[250px_1fr_190px] gap-5">
+                {/* Left navbar — only categories */}
+                <nav
+                  className="max-h-[380px] overflow-y-auto rounded-xl bg-zinc-50 p-2 scrollbar-thin"
+                  aria-label="Shop categories"
+                >
+                  {cats.map((c) => {
+                    const active = activeShopCat?.slug === c.slug;
+                    return (
+                      <button
+                        key={c.slug}
+                        onMouseEnter={() => setShopCat(c.slug)}
+                        onFocus={() => setShopCat(c.slug)}
+                        onClick={() => navigate(`/shop?cat=${c.slug}`)}
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-bold transition-colors ${
+                          active
+                            ? "bg-white text-zinc-900 shadow-sm"
+                            : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                        }`}
+                        aria-current={active ? "true" : undefined}
+                      >
+                        {c.name}
+                        <span className={`flex items-center gap-1 text-xs font-medium ${active ? "text-primary" : "text-zinc-400"}`}>
+                          {typeof c.productCount === "number" && `${c.productCount}`}
+                          <ChevronRight className={`h-3.5 w-3.5 ${active ? "text-primary" : "text-zinc-300"}`} aria-hidden="true" />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                {/* Middle panel — subcategories of the selected category */}
+                <div className="min-w-0">
+                  {activeShopCat ? (
+                    <>
+                      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <div>
+                          <p className="font-display text-base font-bold uppercase tracking-wide text-zinc-900">
+                            {activeShopCat.name}
+                          </p>
+                          {activeShopCat.description && (
+                            <p className="mt-0.5 text-xs text-zinc-500">{activeShopCat.description}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/shop?cat=${activeShopCat.slug}`)}
+                          className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+                        >
+                          View All →
+                        </button>
+                      </div>
+                      {activeShopCat.subcategories && activeShopCat.subcategories.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          {activeShopCat.subcategories.map((sub) => (
+                            <button
+                              key={sub.slug}
+                              onClick={() => navigate(`/shop?cat=${activeShopCat.slug}&sub=${sub.slug}`)}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-accent"
+                            >
+                              <span className="text-[13px] font-bold text-zinc-700">{sub.name}</span>
+                              <span className="shrink-0 text-[11px] font-medium text-zinc-400">
+                                {typeof sub.productCount === "number" ? `${sub.productCount} items` : ""}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-center">
+                          <p className="text-sm text-zinc-500">
+                            No subcategories yet — browse all {activeShopCat.name.toLowerCase()}.
+                          </p>
+                        </div>
+                      )}
+                      <p className="mt-3 text-[11px] text-zinc-400">
+                        Select a subcategory to filter the shop, or view the full range above.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-zinc-400">
+                      Loading categories…
+                    </div>
+                  )}
+                </div>
+
+                {/* Right — category promo image */}
+                {activeShopCat && (
                   <button
-                    key={c.slug}
-                    onClick={() => navigate(`/shop?cat=${c.slug}`)}
-                    className="group relative overflow-hidden rounded-xl text-left"
-                    aria-label={`Shop ${c.name}`}
+                    onClick={() => navigate(`/shop?cat=${activeShopCat.slug}`)}
+                    className="group relative w-[190px] shrink-0 overflow-hidden rounded-xl text-left"
+                    aria-label={`Shop all ${activeShopCat.name}`}
                   >
                     <img
-                      src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
-                      alt={c.name}
-                      className="h-28 w-full object-cover img-zoom"
+                      src={activeShopCat.image ?? "/images/p-acrylic-led-nameplate.png"}
+                      alt={activeShopCat.name}
+                      className="h-full min-h-[260px] w-full object-cover img-zoom"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent" aria-hidden="true" />
-                    <div className="absolute bottom-0 w-full p-3">
-                      <p className="font-display text-[13px] font-bold leading-tight text-white">{c.name}</p>
-                      {typeof c.productCount === "number" && (
-                        <p className="mt-0.5 text-[11px] text-zinc-300">{c.productCount} products</p>
-                      )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/25 to-transparent" aria-hidden="true" />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <Badge className="mb-1.5 bg-primary text-primary-foreground">{activeShopCat.productCount ?? 0} products</Badge>
+                      <p className="font-display text-sm font-bold leading-tight text-white">{activeShopCat.name}</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary group-hover:underline">
+                        Shop Now →
+                      </p>
                     </div>
                   </button>
-                ))}
+                )}
               </div>
             </div>
           </div>

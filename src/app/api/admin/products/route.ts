@@ -34,6 +34,13 @@ export async function POST(req: NextRequest) {
     const dupe = await db.product.findUnique({ where: { slug } });
     if (dupe) return NextResponse.json({ error: `Slug "${slug}" already exists` }, { status: 400 });
 
+    // Optional subcategory — must belong to the chosen category
+    let subcategoryId: string | null = null;
+    if (b.subcategoryId) {
+      const sub = await db.subcategory.findUnique({ where: { id: String(b.subcategoryId) } });
+      if (sub && sub.categoryId === String(b.categoryId ?? "")) subcategoryId = sub.id;
+    }
+
     const product = await db.product.create({
       data: {
         name,
@@ -43,6 +50,7 @@ export async function POST(req: NextRequest) {
         oldPrice: b.oldPrice === null || b.oldPrice === undefined || b.oldPrice === "" ? null : Number(b.oldPrice),
         type: b.type === "BUY_NOW" ? "BUY_NOW" : "CUSTOM_ORDER",
         categoryId: String(b.categoryId ?? ""),
+        subcategoryId,
         images: JSON.stringify(Array.isArray(b.images) ? b.images : []),
         specs: JSON.stringify(Array.isArray(b.specs) ? b.specs : []),
         options: JSON.stringify(Array.isArray(b.options) ? b.options : []),

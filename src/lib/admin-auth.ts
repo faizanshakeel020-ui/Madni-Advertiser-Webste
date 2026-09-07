@@ -69,6 +69,7 @@ export type MappedProduct = {
   oldPrice: number | null;
   type: "BUY_NOW" | "CUSTOM_ORDER";
   categoryId: string;
+  subcategoryId: string | null;
   category?: { id: string; slug: string; name: string };
   images: string[];
   specs: { label: string; value: string }[];
@@ -90,6 +91,7 @@ export function mapProduct(p: DbProduct & { category?: { id: string; slug: strin
     oldPrice: p.oldPrice,
     type: p.type,
     categoryId: p.categoryId,
+    subcategoryId: p.subcategoryId ?? null,
     category: p.category ?? undefined,
     images: safeParse(p.images, []),
     specs: safeParse(p.specs, []),
