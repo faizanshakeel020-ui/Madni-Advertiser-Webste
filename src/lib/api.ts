@@ -5,6 +5,8 @@
  */
 import type {
   Category,
+  Client,
+  ClientProject,
   Order,
   Product,
   ProductListResponse,
@@ -56,6 +58,10 @@ export async function fetchProduct(slug: string): Promise<{ product: Product; re
 
 export async function fetchCategories(): Promise<Category[]> {
   return jsonFetch<Category[]>("/api/categories");
+}
+
+export async function fetchClients(): Promise<Client[]> {
+  return jsonFetch<Client[]>("/api/clients");
 }
 
 // ---------- Orders ----------
@@ -167,6 +173,56 @@ export async function adminSaveProduct(
 
 export async function adminDeleteProduct(id: string): Promise<{ ok: boolean }> {
   return jsonFetch(`/api/admin/products/${id}`, { method: "DELETE" });
+}
+
+// ---------- Admin: clients & their projects ----------
+
+export type AdminClientPayload = {
+  id?: string;
+  name: string;
+  logo: string;
+  industry?: string | null;
+  sortOrder?: number;
+};
+
+export async function adminFetchClients(): Promise<Client[]> {
+  return jsonFetch("/api/admin/clients");
+}
+
+export async function adminSaveClient(data: AdminClientPayload): Promise<Client> {
+  return jsonFetch(data.id ? `/api/admin/clients/${data.id}` : "/api/admin/clients", {
+    method: data.id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteClient(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/clients/${id}`, { method: "DELETE" });
+}
+
+export type AdminClientProjectPayload = {
+  id?: string;
+  clientId: string;
+  title: string;
+  description: string;
+  image: string;
+  year?: number | null;
+};
+
+export async function adminSaveClientProject(data: AdminClientProjectPayload): Promise<ClientProject> {
+  return jsonFetch(
+    data.id ? `/api/admin/projects/${data.id}` : `/api/admin/clients/${data.clientId}/projects`,
+    {
+      method: data.id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export async function adminDeleteClientProject(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/projects/${id}`, { method: "DELETE" });
 }
 
 export type CategorizeResponse = {

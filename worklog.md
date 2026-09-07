@@ -274,3 +274,48 @@ Work Log:
 Stage Summary:
 - Adding a product now needs NO manual writing: type the name → category + subcategory auto-assigned AND an SEO-optimized description auto-written (primary keyword first, location + long-tail keywords, feature bullets, type-aware CTA); "Write with AI / Regenerate" button for manual control with variation; admin notes become AI hints; SEO meta info (title/description/keywords) shown in the form; template fallback keeps the flow working if AI is down
 - New: src/lib/describe.ts, /api/admin/generate-description; modified: api.ts, admin-products.tsx, product-detail-view.tsx
+
+---
+Task ID: 16-a
+Agent: image-generation-runner
+Task: Generate 8 client logo images for Our Clients homepage section
+
+Work Log:
+- Read worklog.md tail for project context (Madni Advertiser signage site, images live in /public/images)
+- CLI syntax probe: `z-ai imagegen` was unknown — correct subcommand per `z-ai --help` is `z-ai image -p <prompt> -o <path>` (default size 1024x1024 = square, ideal for rounded-full circular crop)
+- Generated all 8 fictional Pakistani business client logos in two parallel batches of 4 (no content-filter failures, 0 retries needed) — every prompt appended: "square composition, logo centered with generous margin, emblem occupies middle 70 percent, flat solid white background, professional brand emblem, vector illustration style, no readable text or words, crisp edges" (spelled-out names avoided; monograms kept abstract)
+  1. client-cafe-mocha.png — minimal coffee cup + steam swirls in circular badge, warm brown/cream
+  2. client-al-shifa-hospital.png — medical cross with palm-leaf accent, teal/white
+  3. client-royal-palace.png — golden crown above abstract monogram, maroon/gold
+  4. client-technova.png — geometric letter T from circuit lines + nodes, violet/charcoal
+  5. client-green-valley.png — open book with sprouting leaf, green/navy
+  6. client-megamart.png — double-M monogram in shopping basket, red/yellow
+  7. client-fitzone.png — dumbbell with lightning bolt, orange/black
+  8. client-spice-route.png — chili pepper with crossed fork & spoon, deep red/gold
+- Verified via ls -la + file: all 8 exist, non-empty (35-102 KB), all 1024x1024 square
+- Note: files are JPEG data with .png extension — same as existing project images (hero-1.png, p-banner-birthday.png), browsers render fine; no conversion applied to stay consistent with project convention
+
+Stage Summary:
+- 8 client logo images generated to /home/z/my-project/public/images/: client-cafe-mocha.png, client-al-shifa-hospital.png, client-royal-palace.png, client-technova.png, client-green-valley.png, client-megamart.png, client-fitzone.png, client-spice-route.png (all 1024x1024 square, centered emblem, flat white background — ready for circular rounded-full crop)
+- No persistent failures; all generations succeeded on first attempt
+
+---
+Task ID: 16-clients
+Agent: Z.ai Code (main agent)
+Task: Homepage "Our Clients" section — client logos in round frames (between hero and Shop by Category), click a logo → show that client's project details
+
+Work Log:
+- Prisma: new Client (name, logo, industry, sortOrder) + ClientProject (title, description, image, year, sortOrder, clientId FK, onDelete: Cascade) models → bun run db:push; dev server restarted (old Prisma client instance in memory caused db.client undefined)
+- Task 16-a (subagent): generated 8 square client logos via z-ai image CLI → public/images/client-*.png (Cafe Mocha, Al-Shifa Hospital, Royal Palace Hotel, TechNova Solutions, Green Valley School, MegaMart, FitZone Gym, Spice Route)
+- scripts/seed-clients.ts (new): 8 demo clients × 2 projects each (16 total) using existing proj-*/p-* images; idempotent (skips if clients exist)
+- API: GET /api/clients (public, clients + projects sorted); admin CRUD: GET/POST /api/admin/clients, PUT/DELETE /api/admin/clients/[id], POST /api/admin/clients/[id]/projects, PUT/DELETE /api/admin/projects/[id] (all admin-auth, validation incl. year 1900-2200)
+- types.ts: Client + ClientProject types; api.ts: fetchClients() + adminFetchClients/adminSaveClient/adminDeleteClient/adminSaveClientProject/adminDeleteClientProject helpers
+- home-view.tsx: new section 1.5 "Our Clients" exactly between hero and Shop by Category — centered wrapping grid of round logo frames (rounded-full, zinc ring → gold ring + lift + shadow on hover), client name + gold project-count chip + industry label under each; click → Dialog with round logo header (name, industry, "N projects"), project cards (16:9 image, year badge, title, description), empty-state text, "Get a Free Quote" CTA (closes dialog → /quote); skeletons while loading
+- admin-clients.tsx (new): Clients tab in admin panel — client cards (round logo, name, industry, projects list with thumbnails) + Add/Edit/Delete client dialog (logo upload via /api/upload + URL input, round live preview) + Add/Edit/Delete project dialog (image upload + preview, title, description, year) + both delete confirmations
+- admin-view.tsx: Clients tab added (Building2 icon) to sidebar
+- E2E browser-verified: section renders 8 round logos after hero / before Shop by Category (section order: Featured projects → Our clients → Shop by category); Cafe Mocha click → dialog (2 projects, images loaded, year badges, CTA works → #/quote, dialog closes); VLM-verified desktop section (round frames ✓, logos centered ✓, names + industries ✓, rings + spacing ✓, no glitches) and dialog (round logo + name + industry header ✓, project cards ✓); mobile 390px (centered wrapping grid, readable, no overflow); admin flow: Add Client (Test Pharma Labs) → Add Project (Test Lab Reception Wall) → appeared on homepage → dialog showed it → deleted → back to 8 clients; 0 page/console errors; footer still bottom; lint 0 errors; dev.log all 200s
+
+Stage Summary:
+- Homepage now has an "Our Clients" section between the hero and Shop by Category: client logos in circular gold-ringed frames; clicking any logo opens that client's project details (images, titles, descriptions, years) with a quote CTA
+- Fully admin-manageable: new Clients tab with client CRUD (round logo upload) + per-client project CRUD — additions appear on the homepage immediately
+- New: prisma Client/ClientProject models, scripts/seed-clients.ts, /api/clients, /api/admin/clients(+/[id]/projects), /api/admin/projects/[id], admin-clients.tsx; modified: home-view.tsx, admin-view.tsx, api.ts, types.ts; 8 new logo images

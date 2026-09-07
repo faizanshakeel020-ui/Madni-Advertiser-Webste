@@ -117,3 +117,27 @@ model AdminUser {
   passwordHash String
   createdAt    DateTime @default(now())
 }
+
+// ---- Clients shown in the homepage "Our Clients" section ----
+model Client {
+  id        String          @id @default(cuid())
+  name      String
+  logo      String // path served from /images or /api/files
+  industry  String? // e.g. Hospitality, Healthcare
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  projects  ClientProject[]
+}
+
+// ---- Projects delivered for a client (shown on logo click) ----
+model ClientProject {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String
+  year        Int?
+  sortOrder   Int      @default(0)
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}

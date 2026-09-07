@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Award,
   BadgeCheck,
+  Briefcase,
   ChevronLeft,
   ChevronRight,
   Factory,
@@ -22,13 +23,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SectionHeading } from "@/components/site/section-heading";
 import { ProductCard } from "@/components/site/product-card";
 import { useRoute } from "@/lib/router";
-import { fetchCategories, fetchProducts } from "@/lib/api";
+import { fetchCategories, fetchClients, fetchProducts } from "@/lib/api";
 import { PORTFOLIO, SERVICES } from "@/lib/services-data";
 import { SITE } from "@/lib/constants";
-import type { Category, Product } from "@/lib/types";
+import type { Category, Client, Product } from "@/lib/types";
 
 const SLIDES = [
   {
@@ -60,15 +68,18 @@ export function HomeView() {
   const [selected, setSelected] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientOpen, setClientOpen] = useState<Client | null>(null);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([fetchCategories(), fetchProducts({ featured: true, per: 8, sort: "popular" })])
-      .then(([cats, prods]) => {
+    Promise.all([fetchCategories(), fetchProducts({ featured: true, per: 8, sort: "popular" }), fetchClients()])
+      .then(([cats, prods, cls]) => {
         if (!alive) return;
         setCategories(cats);
         setFeatured(prods.items);
+        setClients(cls);
       })
       .catch(() => {})
       .finally(() => alive && setLoading(false));
@@ -180,6 +191,132 @@ export function HomeView() {
             />
           ))}
         </div>
+      </section>
+
+      {/* ================= 1.5 OUR CLIENTS — round logos, click → their projects ================= */}
+      <section className="py-14 lg:py-20" aria-label="Our clients">
+        <div className="container-site">
+          <SectionHeading
+            eyebrow="Trusted By"
+            title="Our Clients"
+            description="Brands we've built for — click any logo to see the work we delivered for them."
+          />
+
+          {loading ? (
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-3">
+                  <Skeleton className="h-20 w-20 rounded-full sm:h-24 sm:w-24" />
+                  <Skeleton className="h-3.5 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : clients.length === 0 ? (
+            <p className="text-center text-sm text-zinc-500">Client logos coming soon.</p>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
+              {clients.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setClientOpen(c)}
+                  className="group flex flex-col items-center gap-3 focus-visible:outline-none"
+                  aria-label={`View ${c.name} projects`}
+                >
+                  {/* round logo frame — gold ring, lifts on hover */}
+                  <span
+                    className={
+                      "relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 bg-white transition-all duration-300 sm:h-24 sm:w-24 " +
+                      "border-zinc-200 shadow-sm group-hover:-translate-y-1 group-hover:border-primary group-hover:shadow-lg group-focus-visible:border-primary"
+                    }
+                  >
+                    <img
+                      src={c.logo}
+                      alt={`${c.name} logo`}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">
+                    {c.name}
+                    {c.projects.length > 0 && (
+                      <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                        {c.projects.length}
+                      </span>
+                    )}
+                  </span>
+                  {c.industry && (
+                    <span className="-mt-3.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                      {c.industry}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ---------- Client projects dialog ---------- */}
+        <Dialog open={!!clientOpen} onOpenChange={(o) => !o && setClientOpen(null)}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto scrollbar-thin">
+            {clientOpen && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-4 pr-8">
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/50 bg-white shadow-sm">
+                      <img src={clientOpen.logo} alt={`${clientOpen.name} logo`} className="h-full w-full object-cover" />
+                    </span>
+                    <div>
+                      <DialogTitle className="font-display text-xl font-bold leading-tight text-zinc-900">
+                        {clientOpen.name}
+                      </DialogTitle>
+                      <DialogDescription className="mt-0.5 flex items-center gap-2">
+                        {clientOpen.industry && (
+                          <span className="font-medium uppercase tracking-wider text-zinc-500">{clientOpen.industry}</span>
+                        )}
+                        <span className="flex items-center gap-1 text-primary">
+                          <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+                          {clientOpen.projects.length} project{clientOpen.projects.length === 1 ? "" : "s"}
+                        </span>
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                {clientOpen.projects.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-zinc-500">
+                    Projects for this client are being documented — check back soon.
+                  </p>
+                ) : (
+                  <div className="space-y-5">
+                    {clientOpen.projects.map((p) => (
+                      <article key={p.id} className="overflow-hidden rounded-xl border bg-zinc-50/60">
+                        <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-100">
+                          <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover" />
+                          {p.year && (
+                            <Badge className="absolute right-3 top-3 bg-zinc-950/85 text-white hover:bg-zinc-950/85">
+                              {p.year}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-display text-base font-bold text-zinc-900">{p.title}</h3>
+                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{p.description}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-zinc-500">Want work like this for your business?</p>
+                  <Button className="font-bold" onClick={() => { setClientOpen(null); navigate("/quote"); }}>
+                    Get a Free Quote <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </section>
 
       {/* ================= 2. SHOP BY CATEGORY ================= */}

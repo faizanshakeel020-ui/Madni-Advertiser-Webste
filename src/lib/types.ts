@@ -138,3 +138,22 @@ export type PortfolioProject = {
   image: string;
   description: string;
 };
+
+export type ClientProject = {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  year: number | null;
+  sortOrder: number;
+};
+
+export type Client = {
+  id: string;
+  name: string;
+  logo: string;
+  industry: string | null;
+  sortOrder: number;
+  projects: ClientProject[];
+  projectCount?: number;
+};

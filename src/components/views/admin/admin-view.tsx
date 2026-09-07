@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import {
   BadgeDollarSign,
+  Building2,
   LayoutDashboard,
   Loader2,
   Lock,
@@ -36,15 +37,17 @@ import { SITE } from "@/lib/constants";
 import { AdminProducts } from "./admin-products";
 import { AdminOrders } from "./admin-orders";
 import { AdminQuotes } from "./admin-quotes";
+import { AdminClients } from "./admin-clients";
 import type { Order, QuoteRequest } from "@/lib/types";
 
-type Tab = "dashboard" | "products" | "orders" | "quotes";
+type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
   { id: "orders", label: "Orders", icon: ReceiptText },
   { id: "quotes", label: "Quote Requests", icon: ClipboardList },
+  { id: "clients", label: "Clients", icon: Building2 },
 ];
 
 export function AdminView() {
@@ -176,6 +179,7 @@ export function AdminView() {
           {tab === "products" && <AdminProducts />}
           {tab === "orders" && <AdminOrders orders={orders} refresh={refresh} />}
           {tab === "quotes" && <AdminQuotes quotes={quotes} refresh={refresh} />}
+          {tab === "clients" && <AdminClients />}
         </main>
       </div>
     </div>
