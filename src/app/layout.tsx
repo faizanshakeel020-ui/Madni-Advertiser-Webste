@@ -20,6 +20,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  icons: { icon: "/images/favicon.png" },
   title: {
     default: "Madni Advertiser — Signage & Display Advertising in Lahore, Pakistan",
     template: "%s | Madni Advertiser",

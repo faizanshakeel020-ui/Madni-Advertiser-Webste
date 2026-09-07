@@ -75,3 +75,21 @@ Work Log:
 Stage Summary:
 - Project backup available for download at download/madni-advertiser-backup.zip (5.5MB)
 - Restore: extract → `bun install` → `bun run dev` (db + images + code all included)
+
+---
+Task ID: 5-logo
+Agent: Z.ai Code (main agent)
+Task: Replace site logo with user-uploaded w-logo.png
+
+Work Log:
+- User uploaded upload/w-logo.png (500x500 RGBA PNG: gold metallic M-shaped icon + "madni"/"advertiser" text, transparent bg)
+- Copied to public/images/logo.png; created public/images/favicon.png (96x96) by cropping top icon portion via sharp — VLM-verified icon-only, no text
+- logo.tsx: replaced old SVG bolt + MADNI/ADVERTISER text with next/image of new logo (h-12 w-12, lg:h-14 w-14, priority)
+- footer.tsx: replaced inline SVG brand block with logo image (h-16 w-16)
+- admin-view.tsx: top bar now shows logo + "ADMIN PANEL" label (replaced MADNI text block); login screen shows logo instead of Lock icon (Lock still used on Sign In button)
+- layout.tsx: added icons: { icon: "/images/favicon.png" } to metadata
+- Lint: 0 errors. Browser-verified (VLM screenshots): desktop header, mobile 390px header, footer, admin login, admin dashboard top bar — all render logo properly; favicon link present; logo click navigates home; zero console errors; dev.log clean
+
+Stage Summary:
+- New gold "madni advertiser" logo live in: header (desktop+mobile), footer, admin top bar, admin login, browser tab favicon
+- Original file kept at upload/w-logo.png; site copy at public/images/logo.png

@@ -5,6 +5,7 @@
  * Access via #/admin. Default demo credentials: admin / madni123
  */
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import {
   BadgeDollarSign,
   LayoutDashboard,
@@ -102,15 +103,14 @@ export function AdminView() {
             {sidebarOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="currentColor" aria-hidden="true">
-                <path d="M13 2 4.5 13.5h5.2l-1.1 8.5L17.5 10.5h-5.2L13 2Z" />
-              </svg>
-            </span>
-            <div className="leading-none">
-              <p className="font-display text-base font-bold text-white">MADNI</p>
-              <p className="text-[9px] font-bold tracking-[0.3em] text-primary">ADMIN PANEL</p>
-            </div>
+            <Image
+              src="/images/logo.png"
+              alt="Madni Advertiser logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+            />
+            <p className="text-[10px] font-bold tracking-[0.3em] text-primary">ADMIN&nbsp;PANEL</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -210,9 +210,13 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-            <Lock className="h-7 w-7 text-white" aria-hidden="true" />
-          </span>
+          <Image
+            src="/images/logo.png"
+            alt="Madni Advertiser logo"
+            width={64}
+            height={64}
+            className="mx-auto h-16 w-16 object-contain"
+          />
           <h1 className="mt-4 font-display text-2xl font-bold text-white">Admin Panel</h1>
           <p className="mt-1 text-sm text-zinc-400">Madni Advertiser — staff access only</p>
         </div>

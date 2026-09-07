@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Clock, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppIcon } from "./icons";
@@ -32,15 +33,13 @@ export function Footer() {
         {/* Brand */}
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="currentColor" aria-hidden="true">
-                <path d="M13 2 4.5 13.5h5.2l-1.1 8.5L17.5 10.5h-5.2L13 2Z" />
-              </svg>
-            </span>
-            <span className="flex flex-col leading-none">
-              <span className="font-display text-xl font-bold text-white">MADNI</span>
-              <span className="text-[10px] font-bold tracking-[0.32em] text-primary">ADVERTISER</span>
-            </span>
+            <Image
+              src="/images/logo.png"
+              alt="Madni Advertiser logo"
+              width={72}
+              height={72}
+              className="h-16 w-16 object-contain"
+            />
           </div>
           <p className="mt-4 text-sm leading-relaxed text-zinc-400">
             {SITE.name} designs, manufactures and installs 3D, LED, acrylic and digital
