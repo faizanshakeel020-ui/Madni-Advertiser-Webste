@@ -94,14 +94,13 @@ export function HomeView() {
 
   return (
     <div>
-      {/* ================= 1. HERO SLIDER ================= */}
+      {/* ================= 1. HERO SLIDER — photography-first ================= */}
       <section className="relative bg-zinc-950" aria-label="Featured projects">
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
             {SLIDES.map((slide, i) => (
               <div key={i} className="relative min-w-0 flex-[0_0_100%]">
-                <div className="relative h-[520px] w-full sm:h-[540px] lg:h-[620px]">
-                  { }
+                <div className="relative h-[460px] w-full sm:h-[560px] lg:h-[660px]">
                   <img
                     src={slide.image}
                     alt={slide.title}
@@ -109,32 +108,36 @@ export function HomeView() {
                     loading={i === 0 ? "eager" : "lazy"}
                     fetchPriority={i === 0 ? "high" : "auto"}
                   />
+                  {/* subtle bottom gradient for caption/arrows legibility */}
                   <div
-                    className="absolute inset-0 bg-gradient-to-r from-zinc-950/85 via-zinc-950/50 to-zinc-950/10"
+                    className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent"
                     aria-hidden="true"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-transparent sm:hidden" aria-hidden="true" />
-                  <div className="container-site absolute inset-0 flex items-center">
-                    <div className="max-w-xl pb-10">
-                      <Badge className="mb-4 bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary">
-                        <Sparkles className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  {/* caption — bottom left */}
+                  <div className="container-site absolute inset-x-0 bottom-0">
+                    <div className="max-w-2xl pb-14 sm:pb-16">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
                         {slide.eyebrow}
-                      </Badge>
-                      <h1 className="font-display text-3xl font-bold leading-[1.1] text-white sm:text-4xl lg:text-5xl xl:text-[3.4rem]">
+                      </p>
+                      <h1 className="mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
                         {slide.title}
                       </h1>
-                      <p className="mt-4 max-w-lg text-sm leading-relaxed text-zinc-200 sm:text-base">
+                      <p className="mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
                         {slide.subtitle}
                       </p>
-                      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                        <Button size="lg" className="h-12 rounded-full px-7 font-bold" onClick={() => navigate("/shop")}>
+                      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                        <Button
+                          size="lg"
+                          className="h-11 rounded-[4px] px-7 text-sm font-bold uppercase tracking-wider"
+                          onClick={() => navigate("/shop")}
+                        >
                           <ShoppingCart className="mr-2 h-4 w-4" aria-hidden="true" />
                           Shop Products
                         </Button>
                         <Button
                           size="lg"
                           variant="outline"
-                          className="h-12 rounded-full border-white/40 bg-white/10 px-7 font-bold text-white backdrop-blur hover:bg-white hover:text-zinc-900"
+                          className="h-11 rounded-[4px] border-white/40 bg-white/10 px-7 text-sm font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-white hover:text-zinc-900"
                           onClick={() => navigate("/quote")}
                         >
                           Get a Free Quote
@@ -149,17 +152,17 @@ export function HomeView() {
           </div>
         </div>
 
-        {/* arrows + dots */}
+        {/* circular translucent arrows — visible on all screens */}
         <button
           onClick={() => embla?.scrollPrev()}
-          className="absolute left-4 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur transition-colors hover:bg-primary md:flex"
+          className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </button>
         <button
           onClick={() => embla?.scrollNext()}
-          className="absolute right-4 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur transition-colors hover:bg-primary md:flex"
+          className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
           aria-label="Next slide"
         >
           <ChevronRight className="h-5 w-5" aria-hidden="true" />

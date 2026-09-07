@@ -58,8 +58,8 @@ export const NAV_LINKS = [
   { label: "Services", href: "/services", mega: true },
   { label: "Shop", href: "/shop" },
   { label: "Portfolio", href: "/portfolio" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact Us", href: "/contact" },
 ] as const;
 
 export const PAYMENT_METHODS = [

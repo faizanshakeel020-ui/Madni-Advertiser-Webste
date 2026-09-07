@@ -93,3 +93,23 @@ Work Log:
 Stage Summary:
 - New gold "madni advertiser" logo live in: header (desktop+mobile), footer, admin top bar, admin login, browser tab favicon
 - Original file kept at upload/w-logo.png; site copy at public/images/logo.png
+
+---
+Task ID: 6-interface
+Agent: Z.ai Code (main agent)
+Task: Redesign site interface to match signdisplay.pk-style reference (user-provided screenshots)
+
+Work Log:
+- Analyzed 2 reference screenshots (VLM): light-gray utility bar (logo left, Call Us/Email blocks, dark Get Quote right), solid black uppercase nav bar, photography-first full-bleed hero carousel with circular translucent arrows
+- Rewrote src/components/site/header.tsx: new two-bar structure — (1) light-gray utility bar (zinc-200) with Logo + Call Us/Email label blocks + dark bg-zinc-950 Get Quote button with primary bottom-border accent; (2) solid black sticky nav bar (zinc-950) with white uppercase tracking-widest links, SERVICES mega-menu trigger, xl search input (white/10), cart with badge, mobile hamburger moved to left
+- Utility bar scrolls away; black nav bar is sticky top-0 (gray bar static, header sticky — restructured as fragment)
+- constants.ts: NAV_LINKS labels updated to "About Us"/"Contact Us" for reference-style uppercase nav
+- home-view.tsx hero redesigned: photography-first — subtle bottom-only gradient (was heavy left gradient), bottom-left caption (uppercase primary eyebrow + title leading 1.12 + hidden-on-mobile subtitle + rectangular rounded-[4px] uppercase CTAs), circular translucent arrows (border-white/20 bg-black/40 backdrop-blur) now visible on ALL screens incl. mobile, taller hero (460/560/660px)
+- Removed old dark top bar (cities/hours — still in footer/contact/mobile sheet), removed scrolled shadow state (black bar has constant shadow-md)
+- Lint: 0 errors
+- Browser-verified (VLM + measurements): gray utility bar layout ✓, dark Get Quote ✓, black uppercase nav ✓, hero slider changes slide on arrow click ✓, mega menu opens on real mouse hover (4 service columns + Featured exhibition card) ✓, mobile 390px (hamburger left, search+cart right, sheet menu with logo/search/links/accordion/CTAs) ✓, sticky behavior (gray scrolls away, black stays) ✓, h1 measured no overlap with nav (331px vs 105px) ✓, Shop + Get Quote navigation ✓, 0 console errors, no hydration errors on fresh reload (earlier warning was stale hot-reload artifact)
+- Cleaned up 11 temp screenshots
+
+Stage Summary:
+- Site interface now matches reference style: gray utility bar + black sticky uppercase nav + photography-first hero with circular translucent arrows
+- All existing functionality preserved: mega menu, search, cart badge, mobile sheet menu, dual CTAs, WhatsApp button
