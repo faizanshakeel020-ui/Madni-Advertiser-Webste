@@ -180,6 +180,7 @@ export async function adminDeleteProduct(id: string): Promise<{ ok: boolean }> {
 export type AdminClientPayload = {
   id?: string;
   name: string;
+  slug?: string;
   logo: string;
   industry?: string | null;
   sortOrder?: number;

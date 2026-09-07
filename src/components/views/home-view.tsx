@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Award,
   BadgeCheck,
-  Briefcase,
   ChevronLeft,
   ChevronRight,
   Factory,
@@ -23,13 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { SectionHeading } from "@/components/site/section-heading";
 import { ProductCard } from "@/components/site/product-card";
 import { useRoute } from "@/lib/router";
@@ -70,7 +62,6 @@ export function HomeView() {
   const [featured, setFeatured] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clientOpen, setClientOpen] = useState<Client | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -218,9 +209,9 @@ export function HomeView() {
               {clients.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => setClientOpen(c)}
+                  onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
                   className="group flex flex-col items-center gap-3 focus-visible:outline-none"
-                  aria-label={`View ${c.name} projects`}
+                  aria-label={`View ${c.name} case study`}
                 >
                   {/* round logo frame — gold ring, lifts on hover */}
                   <span
@@ -254,69 +245,6 @@ export function HomeView() {
             </div>
           )}
         </div>
-
-        {/* ---------- Client projects dialog ---------- */}
-        <Dialog open={!!clientOpen} onOpenChange={(o) => !o && setClientOpen(null)}>
-          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto scrollbar-thin">
-            {clientOpen && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center gap-4 pr-8">
-                    <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/50 bg-white shadow-sm">
-                      <img src={clientOpen.logo} alt={`${clientOpen.name} logo`} className="h-full w-full object-cover" />
-                    </span>
-                    <div>
-                      <DialogTitle className="font-display text-xl font-bold leading-tight text-zinc-900">
-                        {clientOpen.name}
-                      </DialogTitle>
-                      <DialogDescription className="mt-0.5 flex items-center gap-2">
-                        {clientOpen.industry && (
-                          <span className="font-medium uppercase tracking-wider text-zinc-500">{clientOpen.industry}</span>
-                        )}
-                        <span className="flex items-center gap-1 text-primary">
-                          <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
-                          {clientOpen.projects.length} project{clientOpen.projects.length === 1 ? "" : "s"}
-                        </span>
-                      </DialogDescription>
-                    </div>
-                  </div>
-                </DialogHeader>
-
-                {clientOpen.projects.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-zinc-500">
-                    Projects for this client are being documented — check back soon.
-                  </p>
-                ) : (
-                  <div className="space-y-5">
-                    {clientOpen.projects.map((p) => (
-                      <article key={p.id} className="overflow-hidden rounded-xl border bg-zinc-50/60">
-                        <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-100">
-                          <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover" />
-                          {p.year && (
-                            <Badge className="absolute right-3 top-3 bg-zinc-950/85 text-white hover:bg-zinc-950/85">
-                              {p.year}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-display text-base font-bold text-zinc-900">{p.title}</h3>
-                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{p.description}</p>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-zinc-500">Want work like this for your business?</p>
-                  <Button className="font-bold" onClick={() => { setClientOpen(null); navigate("/quote"); }}>
-                    Get a Free Quote <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
       </section>
 
       {/* ================= 2. SHOP BY CATEGORY ================= */}

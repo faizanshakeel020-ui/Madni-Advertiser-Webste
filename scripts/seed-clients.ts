@@ -5,11 +5,12 @@
 import { db } from '../src/lib/db';
 
 type ProjectSeed = { title: string; description: string; image: string; year: number; sortOrder: number };
-type ClientSeed = { name: string; logo: string; industry: string; sortOrder: number; projects: ProjectSeed[] };
+type ClientSeed = { name: string; slug: string; logo: string; industry: string; sortOrder: number; projects: ProjectSeed[] };
 
 const CLIENTS: ClientSeed[] = [
   {
     name: "Cafe Mocha",
+    slug: "cafe-mocha",
     logo: "/images/client-cafe-mocha.png",
     industry: "Food & Beverage",
     sortOrder: 1,
@@ -34,6 +35,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "Al-Shifa Hospital",
+    slug: "al-shifa-hospital",
     logo: "/images/client-al-shifa-hospital.png",
     industry: "Healthcare",
     sortOrder: 2,
@@ -58,6 +60,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "Royal Palace Hotel",
+    slug: "royal-palace-hotel",
     logo: "/images/client-royal-palace.png",
     industry: "Hospitality",
     sortOrder: 3,
@@ -82,6 +85,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "TechNova Solutions",
+    slug: "technova-solutions",
     logo: "/images/client-technova.png",
     industry: "Information Technology",
     sortOrder: 4,
@@ -106,6 +110,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "Green Valley School",
+    slug: "green-valley-school",
     logo: "/images/client-green-valley.png",
     industry: "Education",
     sortOrder: 5,
@@ -130,6 +135,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "MegaMart",
+    slug: "megamart",
     logo: "/images/client-megamart.png",
     industry: "Retail",
     sortOrder: 6,
@@ -154,6 +160,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "FitZone Gym",
+    slug: "fitzone-gym",
     logo: "/images/client-fitzone.png",
     industry: "Fitness",
     sortOrder: 7,
@@ -178,6 +185,7 @@ const CLIENTS: ClientSeed[] = [
   },
   {
     name: "Spice Route",
+    slug: "spice-route",
     logo: "/images/client-spice-route.png",
     industry: "Food & Beverage",
     sortOrder: 8,
@@ -214,6 +222,7 @@ async function main() {
     await db.client.create({
       data: {
         name: c.name,
+        slug: c.slug,
         logo: c.logo,
         industry: c.industry,
         sortOrder: c.sortOrder,

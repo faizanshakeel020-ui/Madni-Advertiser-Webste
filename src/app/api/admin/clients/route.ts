@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { slugify } from "@/lib/format";
+
+/** Find a unique slug for a client ("cafe-mocha", "cafe-mocha-2", ...). */
+async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
+  let slug = base || "client";
+  let n = 2;
+  while (
+    await db.client.findFirst({ where: { slug, ...(excludeId ? { NOT: { id: excludeId } } : {}) } })
+  ) {
+    slug = `${base}-${n++}`;
+  }
+  return slug;
+}
 
 /** GET /api/admin/clients — list with project counts */
 export async function GET() {
@@ -19,6 +32,7 @@ export async function GET() {
       clients.map((c) => ({
         id: c.id,
         name: c.name,
+        slug: c.slug,
         logo: c.logo,
         industry: c.industry,
         sortOrder: c.sortOrder,
@@ -55,9 +69,14 @@ export async function POST(req: NextRequest) {
       ? Number(b.sortOrder)
       : (await db.client.count()) + 1;
 
+    const slug = await uniqueSlug(
+      slugify(String(b.slug ?? "").trim() || name)
+    );
+
     const client = await db.client.create({
       data: {
         name,
+        slug,
         logo,
         industry: b.industry ? String(b.industry).trim() : null,
         sortOrder,

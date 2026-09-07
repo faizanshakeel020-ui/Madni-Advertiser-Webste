@@ -19,6 +19,7 @@ import { QuoteView } from "@/components/views/quote-view";
 import { AboutView } from "@/components/views/about-view";
 import { PortfolioView } from "@/components/views/portfolio-view";
 import { ContactView } from "@/components/views/contact-view";
+import { CaseStudyView } from "@/components/views/case-study-view";
 import { AdminView } from "@/components/views/admin/admin-view";
 
 const queryClient = new QueryClient({
@@ -29,7 +30,7 @@ const queryClient = new QueryClient({
 
 function RouteSwitch() {
   const { route } = useRoute();
-  const [first, second] = route.segments;
+  const [first, second, third] = route.segments;
 
   // Admin panel — standalone chrome
   if (first === "admin") {
@@ -51,9 +52,12 @@ function RouteSwitch() {
         {first === "quote" && <QuoteView />}
         {first === "about" && <AboutView />}
         {first === "portfolio" && <PortfolioView />}
+        {first === "casestudy" && second === "portfolio" && third && (
+          <CaseStudyView key={third} slug={third} />
+        )}
         {first === "contact" && <ContactView />}
         {first !== undefined &&
-          !["shop", "product", "services", "cart", "checkout", "order", "quote", "about", "portfolio", "contact", "admin"].includes(first) && (
+          !["shop", "product", "services", "cart", "checkout", "order", "quote", "about", "portfolio", "casestudy", "contact", "admin"].includes(first) && (
             <NotFoundView />
           )}
       </main>

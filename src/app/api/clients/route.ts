@@ -14,6 +14,7 @@ export async function GET() {
       clients.map((c) => ({
         id: c.id,
         name: c.name,
+        slug: c.slug,
         logo: c.logo,
         industry: c.industry,
         sortOrder: c.sortOrder,

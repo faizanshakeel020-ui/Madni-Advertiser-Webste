@@ -45,11 +45,13 @@ import {
   adminSaveClientProject,
   uploadImage,
 } from "@/lib/api";
+import { slugify } from "@/lib/format";
 import type { Client, ClientProject } from "@/lib/types";
 
 type ClientEdit = {
   id?: string;
   name: string;
+  slug: string;
   logo: string;
   industry: string;
 };
@@ -64,7 +66,7 @@ type ProjectEdit = {
   year: string;
 };
 
-const emptyClient: ClientEdit = { name: "", logo: "", industry: "" };
+const emptyClient: ClientEdit = { name: "", slug: "", logo: "", industry: "" };
 
 export function AdminClients() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -106,7 +108,7 @@ export function AdminClients() {
   };
 
   const openEditClient = (c: Client) => {
-    setClientEdit({ id: c.id, name: c.name, logo: c.logo, industry: c.industry ?? "" });
+    setClientEdit({ id: c.id, name: c.name, slug: c.slug, logo: c.logo, industry: c.industry ?? "" });
     setClientOpen(true);
   };
 
@@ -119,6 +121,7 @@ export function AdminClients() {
       await adminSaveClient({
         id: clientEdit.id,
         name: clientEdit.name.trim(),
+        slug: clientEdit.slug.trim(),
         logo: clientEdit.logo.trim(),
         industry: clientEdit.industry.trim() || null,
       });
@@ -360,9 +363,26 @@ export function AdminClients() {
                   <Label>Client Name *</Label>
                   <Input
                     value={clientEdit.name}
-                    onChange={(e) => setClientEdit((s) => (s ? { ...s, name: e.target.value } : s))}
+                    onChange={(e) =>
+                      setClientEdit((s) =>
+                        s ? { ...s, name: e.target.value, ...(s.id ? {} : { slug: slugify(e.target.value) }) } : s
+                      )
+                    }
                     placeholder="e.g. Cafe Mocha"
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Case Study URL</Label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="shrink-0 font-mono text-xs text-zinc-400">/casestudy/portfolio/</span>
+                    <Input
+                      value={clientEdit.slug}
+                      onChange={(e) => setClientEdit((s) => (s ? { ...s, slug: slugify(e.target.value) } : s))}
+                      placeholder="auto-from-name"
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400">Where this client&apos;s logo click takes visitors. Auto-filled from the name.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Industry</Label>

@@ -319,3 +319,26 @@ Stage Summary:
 - Homepage now has an "Our Clients" section between the hero and Shop by Category: client logos in circular gold-ringed frames; clicking any logo opens that client's project details (images, titles, descriptions, years) with a quote CTA
 - Fully admin-manageable: new Clients tab with client CRUD (round logo upload) + per-client project CRUD — additions appear on the homepage immediately
 - New: prisma Client/ClientProject models, scripts/seed-clients.ts, /api/clients, /api/admin/clients(+/[id]/projects), /api/admin/projects/[id], admin-clients.tsx; modified: home-view.tsx, admin-view.tsx, api.ts, types.ts; 8 new logo images
+
+---
+Task ID: 17-real-urls
+Agent: Z.ai Code (main agent)
+Task: Real clean URLs instead of hash routes — /shop, /portfolio etc., and client logo click → /casestudy/portfolio/<brand-name>
+
+Work Log:
+- Prisma: Client.slug (unique) added — db:push blocked by required column on 8 existing rows → resolved via prisma generate + raw SQL ALTER TABLE (default "") + backfill (slugify(name)) + db:push (added unique index); scripts/seed-clients.ts now seeds slugs
+- src/lib/router.tsx REWRITTEN: hash router → History-API router — parsePath() (path + query), initial state "/" on server AND client (SSR HTML matches first client render → no structural hydration mismatch), useLayoutEffect syncs the real URL (location.pathname) BEFORE first paint so direct deep loads show the right page with no visible flash; navigate() uses history.pushState/replaceState; popstate listener keeps browser Back/Forward working; legacy "#/shop" hash links auto-redirect to "/shop" via replaceState; scroll-reset-on-path-change + keepScroll preserved
+- next.config.ts: fallback-phase rewrites — "/:path*" → "/" (fallback runs AFTER all real routes: /api/*, dynamic API routes, public files — so APIs and images untouched, but any clean SPA URL is served by the single "/" page; still only ONE Next.js route exists)
+- app.tsx: route segments now [first, second, third]; new case: first="casestudy" && second="portfolio" && third → <CaseStudyView slug={third}/>; "casestudy" added to the NotFound guard list
+- case-study-view.tsx (NEW): full case-study page — dark hero with the client's round logo (gold ring), name, industry, "N projects delivered" + breadcrumb (Home / Portfolio / Client); projects grid (image, year badge, title, description; first project full-width when odd count); empty-state; dark CTA banner ("Want work like this for your business?" + Get a Free Quote → /quote); View Full Portfolio button; loading skeletons + 404 state with the wrong slug shown
+- home-view.tsx: Our Clients logo click now navigates to /casestudy/portfolio/<slug> (dialog removed — page URL instead, per request)
+- Client CRUD APIs: slug in GET responses; POST auto-generates unique slug (slugify(name) + -2/-3…); PUT regenerates slug when name changes or explicit slug given (uniqueness-checked); admin-clients.tsx: "Case Study URL" field showing /casestudy/portfolio/<slug> (auto-filled from name while typing a new client, editable); admin-view.tsx: 2 remaining "#/" anchors → real "/" hrefs
+- E2E verified with agent-browser: direct loads (fresh navigation) of /shop ("Signage Shop" h1), /casestudy/portfolio/royal-palace-hotel (logo+2 projects), /portfolio, /product/gym-motivation-neon-sign, /quote, /admin — all render correct views with clean URLs (no hash); homepage logo click → URL becomes /casestudy/portfolio/cafe-mocha with h1+breadcrumb+2 project cards+CTA; browser Back → "/" and Forward → case study again (popstate works); mega-menu click → /shop?cat=neon-art (query params intact, filtered shop); legacy hash link "/#/shop" auto-redirects to "/shop"; admin: new client "Test Burger Co" → auto-slug "test-burger-co" → /casestudy/portfolio/test-burger-co renders immediately → deleted (cleanup verified); mobile 390px case study: no horizontal overflow, CTA visible; VLM-verified full case-study page (hero, breadcrumb, cards, year badges, CTA, footer all present)
+- Verified the ONE console hydration warning (aria-controls useId diff in Header Sheet) is PRE-EXISTING: temporarily reverted router.tsx to the old hash version → same warning on fresh / load → restored new router (not a regression; attribute-only, React 19 + Radix dev-mode artifact)
+- APIs verified untouched: /api/clients, /api/categories, /api/products/[slug], /images/* all 200; lint 0 errors (one intentional eslint-disable for set-state-in-layout-effect, same pattern as admin-view)
+
+Stage Summary:
+- The site now uses REAL clean URLs: /shop, /portfolio, /product/<slug>, /services/<slug>, /quote, /admin — and client logos link to /casestudy/portfolio/<client-slug> full case-study pages (replacing the popup dialog)
+- Legacy #/hash links still work (auto-redirect to the clean path); browser back/forward fully functional; all /api routes and static assets unaffected (fallback rewrites)
+- Client URLs are slug-based and admin-manageable (auto-generated from name, editable); new clients get a working case study URL instantly
+- New: case-study-view.tsx; rewritten: router.tsx (History API); modified: next.config.ts (fallback rewrites), app.tsx, home-view.tsx, admin-clients.tsx, admin-view.tsx, api.ts, types.ts, clients/admin-clients APIs, prisma schema + seed

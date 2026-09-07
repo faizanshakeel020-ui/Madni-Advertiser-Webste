@@ -117,7 +117,7 @@ export function AdminView() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <a href="#/" className="hidden text-xs font-bold text-zinc-400 hover:text-primary sm:block">
+          <a href="/" className="hidden text-xs font-bold text-zinc-400 hover:text-primary sm:block">
             ← View public site
           </a>
           <Button
@@ -256,7 +256,7 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
             Demo credentials: <span className="font-mono text-zinc-400">admin / madni123</span>
           </p>
           <p className="text-center text-xs">
-            <a href="#/" className="text-zinc-500 hover:text-primary">← Back to public site</a>
+            <a href="/" className="text-zinc-500 hover:text-primary">← Back to public site</a>
           </p>
         </form>
       </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { slugify } from "@/lib/format";
 
 /** PUT /api/admin/clients/[id] — update a client */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,10 +19,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const logo = b.logo !== undefined ? String(b.logo).trim() : undefined;
     if (logo === "") return NextResponse.json({ error: "A logo image is required" }, { status: 400 });
 
+    // slug: explicit, or keep existing, or derive from the new name
+    let slug: string | undefined;
+    if (b.slug !== undefined || (name && name !== exists.name)) {
+      const base = slugify(
+        (b.slug !== undefined ? String(b.slug) : "").trim() ||
+          (name !== undefined ? name : exists.name)
+      );
+      // ensure uniqueness (excluding this client)
+      let candidate = base || exists.slug;
+      let n = 2;
+      while (
+        await db.client.findFirst({ where: { slug: candidate, NOT: { id } } })
+      ) {
+        candidate = `${base}-${n++}`;
+      }
+      slug = candidate;
+    }
+
     const client = await db.client.update({
       where: { id },
       data: {
         ...(name !== undefined && { name }),
+        ...(slug !== undefined && { slug }),
         ...(logo !== undefined && { logo }),
         ...(b.industry !== undefined && { industry: String(b.industry).trim() || null }),
         ...(Number.isFinite(Number(b.sortOrder)) && { sortOrder: Number(b.sortOrder) }),

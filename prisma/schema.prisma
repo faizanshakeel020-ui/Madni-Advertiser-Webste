@@ -122,6 +122,7 @@ model AdminUser {
 model Client {
   id        String          @id @default(cuid())
   name      String
+  slug      String          @unique // URL: /casestudy/portfolio/<slug>
   logo      String // path served from /images or /api/files
   industry  String? // e.g. Hospitality, Healthcare
   sortOrder Int      @default(0)

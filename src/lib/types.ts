@@ -151,6 +151,7 @@ export type ClientProject = {
 export type Client = {
   id: string;
   name: string;
+  slug: string;
   logo: string;
   industry: string | null;
   sortOrder: number;
