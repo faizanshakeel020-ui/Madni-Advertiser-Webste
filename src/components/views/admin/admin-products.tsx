@@ -263,9 +263,9 @@ export function AdminProducts() {
                       <td className="px-4 py-3 text-zinc-600">{p.category?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         {p.type === "BUY_NOW" ? (
-                          <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Buy Now</Badge>
+                          <Badge className="bg-primary text-primary-foreground hover:bg-primary">Buy Now</Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Custom</Badge>
+                          <Badge variant="secondary" className="border border-primary/40 bg-zinc-950 text-primary hover:bg-zinc-950">Custom</Badge>
                         )}
                       </td>
                       <td className="px-4 py-3 font-bold text-zinc-800">

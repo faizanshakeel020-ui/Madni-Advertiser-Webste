@@ -12,11 +12,11 @@ import type { Product } from "@/lib/types";
 
 export function TypeBadge({ type }: { type: Product["type"] }) {
   return type === "BUY_NOW" ? (
-    <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 gap-1">
+    <Badge className="bg-primary text-primary-foreground hover:bg-primary gap-1">
       <Zap className="h-3 w-3" aria-hidden="true" /> Buy Now
     </Badge>
   ) : (
-    <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border border-amber-300">
+    <Badge variant="secondary" className="border border-primary/50 bg-zinc-950 text-primary hover:bg-zinc-950">
       Custom Order
     </Badge>
   );
@@ -76,7 +76,7 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         {product.oldPrice && product.price && (
-          <span className="absolute right-2.5 top-2.5 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
+          <span className="absolute right-2.5 top-2.5 rounded-full bg-zinc-950 px-2 py-0.5 text-[11px] font-bold text-primary">
             {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}% OFF
           </span>
         )}
@@ -101,7 +101,7 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </div>
           {isBuyNow && product.stock > 0 && (
-            <span className="text-[11px] font-medium text-emerald-700">In stock</span>
+            <span className="text-[11px] font-medium text-primary">In stock</span>
           )}
         </div>
 

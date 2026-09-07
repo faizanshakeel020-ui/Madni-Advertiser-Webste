@@ -408,7 +408,7 @@ function ShopFilters({
           <div className="flex items-center gap-2 rounded-lg px-3 py-2">
             <RadioGroupItem value="BUY_NOW" id="ft-buy" />
             <Label htmlFor="ft-buy" className="cursor-pointer text-sm font-normal text-zinc-600">
-              Buy Now <Badge className="ml-1 bg-emerald-600 text-white hover:bg-emerald-600">Cart</Badge>
+              Buy Now <Badge className="ml-1 bg-primary text-primary-foreground hover:bg-primary">Cart</Badge>
             </Label>
           </div>
           <div className="flex items-center gap-2 rounded-lg px-3 py-2">

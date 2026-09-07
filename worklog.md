@@ -128,3 +128,21 @@ Work Log:
 
 Stage Summary:
 - Logo enlarged everywhere: header ~2x bigger, footer 25% bigger, admin top bar + login bigger; utility bar height raised to fit
+
+---
+Task ID: 8-gold-theme
+Agent: Z.ai Code (main agent)
+Task: Change site theme to grey / black / golden (matching logo gold)
+
+Work Log:
+- globals.css theme tokens updated: --primary oklch(0.646 0.222 29.2) red-orange → oklch(0.72 0.125 83) rich gold (matches logo metallic gold); --primary-foreground → dark warm black (gold buttons get dark text); --accent → light gold tint oklch(0.955 0.035 84) with darker gold accent-foreground; --ring, --sidebar-*, --chart-* all gold/grey/black family
+- Dark mode: brighter gold primary oklch(0.8 0.14 85)
+- Badge unification to theme: product-card TypeBadge — Buy Now = solid gold w/ dark text, Custom Order = black bg + gold text + gold border; % OFF badge red → black bg + gold text; "In stock" emerald → gold
+- shop-view type filter Cart badge → gold; admin-products type badges → gold/black-gold; contact-view "Get a Quote" emerald button → default gold primary
+- Kept intentionally: WhatsApp green buttons/icons (brand recognition), emerald success states (order/quote confirmation), red only for destructive delete actions
+- Lint: 0 errors
+- Browser-verified via VLM: hero eyebrow/CTAs/slider dots gold ✓; section eyebrows + card accents gold ✓; shop badges gold+black ✓; footer gold accents on dark ✓; admin sidebar active gold + stat icons gold + ADMIN PANEL label gold ✓; cohesive grey/black/gold everywhere; 0 console errors on fresh reload
+
+Stage Summary:
+- Full theme conversion to grey/black/golden: primary gold oklch(0.72 0.125 83) (light) / oklch(0.8 0.14 85) (dark), gold-foreground dark text, gold-tinted accents
+- All product/type/discount badges unified to gold+black; semantic colors (WhatsApp green, success green, destructive red) retained

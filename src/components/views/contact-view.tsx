@@ -148,7 +148,7 @@ export function ContactView() {
                   <Phone className="mr-2 h-4 w-4" aria-hidden="true" /> Call Now
                 </Button>
               </a>
-              <Button className="bg-emerald-500 font-bold text-white hover:bg-emerald-600" onClick={() => navigate("/quote")}>
+              <Button className="font-bold" onClick={() => navigate("/quote")}>
                 Get a Quote
               </Button>
             </div>
