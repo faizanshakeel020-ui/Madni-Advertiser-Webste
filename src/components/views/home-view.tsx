@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import {
@@ -63,6 +63,16 @@ export function HomeView() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // clients logo strip — single row, slides left/right when it overflows
+  const [clientsRef, clientsEmbla] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    duration: 25,
+  });
+  const [clientsCanPrev, setClientsCanPrev] = useState(false);
+  const [clientsCanNext, setClientsCanNext] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
   useEffect(() => {
     let alive = true;
     Promise.all([fetchCategories(), fetchProducts({ featured: true, per: 8, sort: "popular" }), fetchClients()])
@@ -93,6 +103,24 @@ export function HomeView() {
       embla.off("select", onSelect);
     };
   }, [embla]);
+
+  // show/hide the clients strip arrows depending on scroll position
+  useEffect(() => {
+    if (!clientsEmbla) return;
+    const update = () => {
+      setClientsCanPrev(clientsEmbla.canScrollPrev());
+      setClientsCanNext(clientsEmbla.canScrollNext());
+    };
+    update();
+    clientsEmbla.on("select", update);
+    clientsEmbla.on("scroll", update);
+    clientsEmbla.on("reInit", update);
+    return () => {
+      clientsEmbla.off("select", update);
+      clientsEmbla.off("scroll", update);
+      clientsEmbla.off("reInit", update);
+    };
+  }, [clientsEmbla]);
 
   return (
     <div>
@@ -194,9 +222,12 @@ export function HomeView() {
           />
 
           {loading ? (
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
+            <div className="flex gap-4 overflow-hidden sm:gap-6 lg:gap-7">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center gap-3">
+                <div
+                  key={i}
+                  className="flex w-[104px] shrink-0 flex-col items-center gap-3 sm:w-[120px] lg:w-[136px]"
+                >
                   <Skeleton className="h-20 w-20 rounded-full sm:h-24 sm:w-24" />
                   <Skeleton className="h-3.5 w-20" />
                 </div>
@@ -205,43 +236,100 @@ export function HomeView() {
           ) : clients.length === 0 ? (
             <p className="text-center text-sm text-zinc-500">Client logos coming soon.</p>
           ) : (
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
-              {clients.map((c) => (
+            <div>
+              {/* one row of round logos — slides left/right when it overflows */}
+              <div className="flex items-center gap-2 sm:gap-4">
                 <button
-                  key={c.id}
-                  onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
-                  className="group flex flex-col items-center gap-3 focus-visible:outline-none"
-                  aria-label={`View ${c.name} case study`}
+                  type="button"
+                  onClick={() => clientsEmbla?.scrollPrev()}
+                  disabled={!clientsCanPrev}
+                  className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                  aria-label="Scroll client logos left"
                 >
-                  {/* round logo frame — gold ring, lifts on hover */}
-                  <span
-                    className={
-                      "relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 bg-white transition-all duration-300 sm:h-24 sm:w-24 " +
-                      "border-zinc-200 shadow-sm group-hover:-translate-y-1 group-hover:border-primary group-hover:shadow-lg group-focus-visible:border-primary"
-                    }
-                  >
-                    <img
-                      src={c.logo}
-                      alt={`${c.name} logo`}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  </span>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">
-                    {c.name}
-                    {c.projects.length > 0 && (
-                      <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                        {c.projects.length}
-                      </span>
-                    )}
-                  </span>
-                  {c.industry && (
-                    <span className="-mt-3.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-                      {c.industry}
-                    </span>
-                  )}
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
-              ))}
+
+                <div
+                  className="min-w-0 flex-1 overflow-hidden"
+                  ref={clientsRef}
+                  onPointerDownCapture={(e) => {
+                    dragStart.current = { x: e.clientX, y: e.clientY };
+                  }}
+                >
+                  <div className="flex gap-4 sm:gap-6 lg:gap-7">
+                    {clients.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={(e) => {
+                          // ignore the click that fires at the end of a swipe
+                          const s = dragStart.current;
+                          if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 8) return;
+                          navigate(`/casestudy/portfolio/${c.slug}`);
+                        }}
+                        className="group flex w-[104px] shrink-0 flex-col items-center gap-3 focus-visible:outline-none sm:w-[120px] lg:w-[136px]"
+                        aria-label={`View ${c.name} case study`}
+                      >
+                        {/* round logo frame — gold ring, lifts on hover */}
+                        <span
+                          className={
+                            "relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 bg-white transition-all duration-300 sm:h-24 sm:w-24 " +
+                            "border-zinc-200 shadow-sm group-hover:-translate-y-1 group-hover:border-primary group-hover:shadow-lg group-focus-visible:border-primary"
+                          }
+                        >
+                          <img
+                            src={c.logo}
+                            alt={`${c.name} logo`}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        </span>
+                        <span className="line-clamp-2 max-w-full px-1 text-center text-sm font-semibold leading-snug text-zinc-700 transition-colors group-hover:text-zinc-900">
+                          {c.name}
+                        </span>
+                        {c.industry && (
+                          <span className="-mt-3.5 max-w-full truncate px-1 text-center text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                            {c.industry}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => clientsEmbla?.scrollNext()}
+                  disabled={!clientsCanNext}
+                  className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                  aria-label="Scroll client logos right"
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* mobile — swipe works too; arrows sit below the row */}
+              {(clientsCanPrev || clientsCanNext) && (
+                <div className="mt-5 flex justify-center gap-3 sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => clientsEmbla?.scrollPrev()}
+                    disabled={!clientsCanPrev}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="Scroll client logos left"
+                  >
+                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => clientsEmbla?.scrollNext()}
+                    disabled={!clientsCanNext}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="Scroll client logos right"
+                  >
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

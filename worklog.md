@@ -342,3 +342,21 @@ Stage Summary:
 - Legacy #/hash links still work (auto-redirect to the clean path); browser back/forward fully functional; all /api routes and static assets unaffected (fallback rewrites)
 - Client URLs are slug-based and admin-manageable (auto-generated from name, editable); new clients get a working case study URL instantly
 - New: case-study-view.tsx; rewritten: router.tsx (History API); modified: next.config.ts (fallback rewrites), app.tsx, home-view.tsx, admin-clients.tsx, admin-view.tsx, api.ts, types.ts, clients/admin-clients APIs, prisma schema + seed
+
+---
+Task ID: 18-clients-row
+Agent: Z.ai Code (main agent)
+Task: Our Clients logos — single row + left/right slide, remove number badges next to client names
+
+Work Log:
+- home-view.tsx: replaced the flex-wrap multi-row logo grid with an Embla carousel strip (align:"start", containScroll:"trimSnaps") — logos now sit in ONE horizontal row of round frames (slide widths: w-[104px] sm:w-[120px] lg:w-[136px])
+- Removed the gold project-count badge next to client names (numbers gone); name now uses line-clamp-2 (wraps to 2 lines instead of hard cut on mobile), industry label stays below
+- Arrows: round bordered ChevronLeft/ChevronRight buttons flanking the row on sm+ (disabled+opacity-0 when not scrollable via canScrollPrev/canScrollNext tracked on select/scroll/reInit); on mobile the two arrows render BELOW the row (sm:hidden) + touch swipe works (embla draggable)
+- Swipe-click guard: onPointerDownCapture stores coords on the viewport; each logo's onClick skips navigation if pointer moved >8px (prevents accidental navigation after a drag)
+- Loading skeleton updated to single-row shape
+- Lint: 0 errors. E2E (agent-browser): 8 logos all same row (desktop 1440px + mobile 390px); next-arrow slides track (translate3d -162px desktop / -119px mobile) and prev arrow enables; logo click still navigates to /casestudy/portfolio/cafe-mocha (h1 confirmed); visible arrows on mobile = 2, positioned below logos; no page horizontal overflow; VLM-verified desktop + mobile screenshots (single row, circles, arrows, no badges, no overlap); dev.log clean (only 200s)
+
+Stage Summary:
+- Our Clients is now a single-row sliding logo strip: flanking arrows on desktop, arrows below row + swipe on mobile, arrows auto-hide when everything fits
+- Number badges next to client names removed; names wrap to 2 lines max (line-clamp-2) so they read fully on mobile
+- Clicking a logo still opens that client's case study page; drag-vs-click guarded so swiping never triggers navigation

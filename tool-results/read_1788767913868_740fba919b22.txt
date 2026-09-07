@@ -1,0 +1,345 @@
+     1→---
+     2→Task ID: 1-img
+     3→Agent: image-generation-runner
+     4→Task: Generate 44 website images for Madni Advertiser site
+     5→
+     6→Work Log:
+     7→- Ran bun scripts/generate-images.ts (foreground, 10-min timeout) 3 times
+     8→- Run 1: hit the 10-minute tool timeout and was killed mid-run; script had already generated ~14 new images (29 pre-existing before run, skip-if-exists made re-run safe)
+     9→- Run 2: finished in ~412s, exit code 1 — all remaining images generated except one; 43/44 files present afterward
+    10→- Run 3 (re-run per instructions): finished in ~77s, exit code 1 — remaining image still failed after 4 retry attempts
+    11→- Persistent failure: p-neon-bismillah-2 — API returns 400 content-filter error (code 1301, "input or generated content may be unsafe/sensitive") for its prompt ("Elegant Arabic calligraphy neon wall sign in warm white light above a wooden console table in a living room"); the similar p-neon-bismillah image generated fine earlier
+    12→
+    13→Stage Summary:
+    14→- 43 images present in public/images (total files: 43/44); 14 new images generated during this task's runs
+    15→- FAILED: p-neon-bismillah-2 (blocked by API content filter on every retry across 2 consecutive runs; prompt may need rewording)
+    16→
+    17→---
+    18→Task ID: 2-main
+    19→Agent: Z.ai Code (main agent)
+    20→Task: Build complete Madni Advertiser website — service-business + e-commerce shop + admin panel on Next.js 16 (single "/" route, hash-based SPA)
+    21→
+    22→Work Log:
+    23→- Prisma schema: Category, Product (BUY_NOW/CUSTOM_ORDER), Order, QuoteRequest, AdminUser; pushed to SQLite (db/custom.db)
+    24→- Seed (scripts/seed.ts): 8 shop categories, 23 products (mixed buy-now/custom), admin user (admin/madni123), demo order + quote
+    25→- Fixed p-neon-bismillah-2 image blocked by content filter — regenerated via CLI with reworded prompt (44/44 images complete)
+    26→- Core infra: lib/constants.ts (site config, bank details, cities), lib/router.tsx (hash router w/ query params), lib/api.ts (client), store/cart.ts (zustand persist), lib/services-data.ts (5 service pillars + 12 portfolio projects), lib/admin-auth.ts (HMAC session, password hashing)
+    27→- Global shell: top utility bar (phone/email/hours/Get Quote), sticky header w/ 4-group mega menu + Exhibition card, search, cart badge; dark footer (services/shop/contact columns, socials, quick links); floating WhatsApp button w/ pulse
+    28→- Home: embla hero slider (3 slides, autoplay, dots/arrows), category grid, service cards, featured products, why-us, recent projects, trust stats + marquee, CTA banner
+    29→- Shop: URL-driven filters (category/type/price buckets), sort, pagination (12/page), search, mobile filter sheet (TanStack Query for data)
+    30→- Product detail: hover-zoom gallery + thumbs, option chips, Buy Now (qty+cart+WhatsApp order) vs Custom Order (notes + embedded QuoteForm), specs table, related products
+    31→- 5 service pages (overview + per-pillar): hero, sub-services, example projects, 4-step process, embedded quote form
+    32→- Cart/Checkout/Confirmation: qty edit/remove, server-side price validation, COD + Bank Transfer, order number MA-xxxxxx, bank details on confirmation, WhatsApp confirm CTA
+    33→- Quote flow: reusable QuoteForm (name/phone/email/service/city/details + reference image upload → /api/upload → /api/files), success state w/ reference Q-xxxxxx
+    34→- About, Portfolio (filterable + lightbox dialog), Contact (info cards + OSM map + form)
+    35→- Admin (#/admin): login (httpOnly HMAC cookie session), dashboard stats, Products CRUD (image upload/URL, specs/options editors), Orders (status select + detail dialog), Quotes (status + reference image viewer)
+    36→- API routes: /api/products (filters/sort/pagination), /api/products/[slug] (+related, popularity bump), /api/categories, /api/orders (POST + validate), /api/orders/[orderNumber], /api/quotes, /api/upload, /api/files/[name], /api/admin/* (login/logout/session/stats/products CRUD/orders/quotes + status PATCH)
+    37→- Fixed lint to zero errors (set-state-in-effect patterns → useSyncExternalStore mounted hook, keyed remounts, useQuery, extracted ShopFilters component, targeted eslint-disables for legit external-sync effects)
+    38→- Fixed nested <button> hydration error (Checkbox inside price-bucket buttons → styled span)
+    39→- E2E verified with agent-browser: home render, hero CTAs, category filter, product detail (options/qty), add-to-cart → cart → checkout → order MA-754767 → confirmation; quote submit (Q-208502, upload Q-527737); admin login → dashboard stats → order status update PENDING→CONFIRMED → products tab + edit dialog; mega menu; header + shop search ("neon", "banner"); portfolio filters; mobile (390px) hamburger + services accordion; sticky footer; zero console errors; VLM screenshot review of home (desktop+mobile) and shop
+    40→
+    41→Stage Summary:
+    42→- Complete production-ready site on "/" (hash SPA): public site + shop + admin panel, 23 seeded products, 44 generated images
+    43→- All backend APIs live on SQLite via Prisma; guest checkout (COD/Bank Transfer) + quote requests with image uploads
+    44→- Admin credentials: admin / madni123 (shown on login screen for demo)
+    45→- Lint: 0 errors; dev server clean; all core user journeys browser-verified
+    46→- Placeholders (phone/WhatsApp/email/address/bank) centralized in src/lib/constants.ts for pre-launch updates
+    47→
+    48→---
+    49→Task ID: 3-footer
+    50→Agent: Z.ai Code (main agent)
+    51→Task: Move the admin-access quick links bar in footer from right side to left side
+    52→
+    53→Work Log:
+    54→- User requested: the footer bottom bar containing the Admin access link (About / Portfolio / Contact / Cart / Admin) was on the right side — move it to the left
+    55→- Edited src/components/site/footer.tsx bottom bar: swapped order — quick links nav now renders first (left side on desktop), copyright text moved to the right side
+    56→- Ran bun run lint: 0 errors
+    57→- Browser-verified with agent-browser: page loaded, scrolled to footer, VLM screenshot review confirms quick links on LEFT and copyright on RIGHT; clicked Admin link → navigates to #/admin correctly; no console/page errors
+    58→- Cleaned up temp screenshot; dev.log clean
+    59→
+    60→Stage Summary:
+    61→- Footer bottom bar: quick links (incl. Admin access) now on the left, copyright on the right; mobile layout unchanged (stacked, centered)
+    62→
+    63→---
+    64→Task ID: 4-backup
+    65→Agent: Z.ai Code (main agent)
+    66→Task: Save project as archive (user asked for RAR)
+    67→
+    68→Work Log:
+    69→- Checked available tools: rar (creator) NOT installed on this machine — only unrar (extract-only) and zip; RAR is proprietary so creation not possible here
+    70→- Created clean project backup as ZIP instead: /home/z/my-project/download/madni-advertiser-backup.zip (5.5MB, 208 files)
+    71→- Included: src/ (all code), public/ (44 images), db/custom.db (live data), prisma/schema.prisma, scripts/seed.ts, mini-services/, upload/, package.json, bun.lock, all configs (tsconfig, next.config, tailwind, postcss, components.json, eslint, Caddyfile), worklog.md
+    72→- Excluded: node_modules (1.2GB, restore via `bun install`), .next build cache, logs, sandbox env folders (skills/, examples/, tests/)
+    73→- Verified ZIP contents via unzip -l — all key files present
+    74→
+    75→Stage Summary:
+    76→- Project backup available for download at download/madni-advertiser-backup.zip (5.5MB)
+    77→- Restore: extract → `bun install` → `bun run dev` (db + images + code all included)
+    78→
+    79→---
+    80→Task ID: 5-logo
+    81→Agent: Z.ai Code (main agent)
+    82→Task: Replace site logo with user-uploaded w-logo.png
+    83→
+    84→Work Log:
+    85→- User uploaded upload/w-logo.png (500x500 RGBA PNG: gold metallic M-shaped icon + "madni"/"advertiser" text, transparent bg)
+    86→- Copied to public/images/logo.png; created public/images/favicon.png (96x96) by cropping top icon portion via sharp — VLM-verified icon-only, no text
+    87→- logo.tsx: replaced old SVG bolt + MADNI/ADVERTISER text with next/image of new logo (h-12 w-12, lg:h-14 w-14, priority)
+    88→- footer.tsx: replaced inline SVG brand block with logo image (h-16 w-16)
+    89→- admin-view.tsx: top bar now shows logo + "ADMIN PANEL" label (replaced MADNI text block); login screen shows logo instead of Lock icon (Lock still used on Sign In button)
+    90→- layout.tsx: added icons: { icon: "/images/favicon.png" } to metadata
+    91→- Lint: 0 errors. Browser-verified (VLM screenshots): desktop header, mobile 390px header, footer, admin login, admin dashboard top bar — all render logo properly; favicon link present; logo click navigates home; zero console errors; dev.log clean
+    92→
+    93→Stage Summary:
+    94→- New gold "madni advertiser" logo live in: header (desktop+mobile), footer, admin top bar, admin login, browser tab favicon
+    95→- Original file kept at upload/w-logo.png; site copy at public/images/logo.png
+    96→
+    97→---
+    98→Task ID: 6-interface
+    99→Agent: Z.ai Code (main agent)
+   100→Task: Redesign site interface to match signdisplay.pk-style reference (user-provided screenshots)
+   101→
+   102→Work Log:
+   103→- Analyzed 2 reference screenshots (VLM): light-gray utility bar (logo left, Call Us/Email blocks, dark Get Quote right), solid black uppercase nav bar, photography-first full-bleed hero carousel with circular translucent arrows
+   104→- Rewrote src/components/site/header.tsx: new two-bar structure — (1) light-gray utility bar (zinc-200) with Logo + Call Us/Email label blocks + dark bg-zinc-950 Get Quote button with primary bottom-border accent; (2) solid black sticky nav bar (zinc-950) with white uppercase tracking-widest links, SERVICES mega-menu trigger, xl search input (white/10), cart with badge, mobile hamburger moved to left
+   105→- Utility bar scrolls away; black nav bar is sticky top-0 (gray bar static, header sticky — restructured as fragment)
+   106→- constants.ts: NAV_LINKS labels updated to "About Us"/"Contact Us" for reference-style uppercase nav
+   107→- home-view.tsx hero redesigned: photography-first — subtle bottom-only gradient (was heavy left gradient), bottom-left caption (uppercase primary eyebrow + title leading 1.12 + hidden-on-mobile subtitle + rectangular rounded-[4px] uppercase CTAs), circular translucent arrows (border-white/20 bg-black/40 backdrop-blur) now visible on ALL screens incl. mobile, taller hero (460/560/660px)
+   108→- Removed old dark top bar (cities/hours — still in footer/contact/mobile sheet), removed scrolled shadow state (black bar has constant shadow-md)
+   109→- Lint: 0 errors
+   110→- Browser-verified (VLM + measurements): gray utility bar layout ✓, dark Get Quote ✓, black uppercase nav ✓, hero slider changes slide on arrow click ✓, mega menu opens on real mouse hover (4 service columns + Featured exhibition card) ✓, mobile 390px (hamburger left, search+cart right, sheet menu with logo/search/links/accordion/CTAs) ✓, sticky behavior (gray scrolls away, black stays) ✓, h1 measured no overlap with nav (331px vs 105px) ✓, Shop + Get Quote navigation ✓, 0 console errors, no hydration errors on fresh reload (earlier warning was stale hot-reload artifact)
+   111→- Cleaned up 11 temp screenshots
+   112→
+   113→Stage Summary:
+   114→- Site interface now matches reference style: gray utility bar + black sticky uppercase nav + photography-first hero with circular translucent arrows
+   115→- All existing functionality preserved: mega menu, search, cart badge, mobile sheet menu, dual CTAs, WhatsApp button
+   116→
+   117→---
+   118→Task ID: 7-logo-size
+   119→Agent: Z.ai Code (main agent)
+   120→Task: Enlarge logo across the site (user: "logo size is too small")
+   121→
+   122→Work Log:
+   123→- logo.tsx (header + mobile sheet): h-12/14 → h-16 (mobile), h-[72px] (sm), h-20 (lg) — width/height attrs 96px for sharpness
+   124→- header.tsx utility bar height increased to match: h-14/sm:h-16/lg:h-[72px] → h-20 sm:h-[88px] lg:h-24
+   125→- footer.tsx brand logo: h-16 → h-20 mobile, h-24 sm+
+   126→- admin-view.tsx: top bar logo h-9 → h-11; login screen logo h-16 → h-20
+   127→- Lint: 0 errors. Browser-verified: desktop logo 80px measured (VLM: large, readable, well-proportioned, no cramping); mobile 390px header + GET QUOTE + black nav all fit without overflow; footer logo 80px measured via eval; 0 console errors on fresh reload (1 transient hot-reload artifact)
+   128→
+   129→Stage Summary:
+   130→- Logo enlarged everywhere: header ~2x bigger, footer 25% bigger, admin top bar + login bigger; utility bar height raised to fit
+   131→
+   132→---
+   133→Task ID: 8-gold-theme
+   134→Agent: Z.ai Code (main agent)
+   135→Task: Change site theme to grey / black / golden (matching logo gold)
+   136→
+   137→Work Log:
+   138→- globals.css theme tokens updated: --primary oklch(0.646 0.222 29.2) red-orange → oklch(0.72 0.125 83) rich gold (matches logo metallic gold); --primary-foreground → dark warm black (gold buttons get dark text); --accent → light gold tint oklch(0.955 0.035 84) with darker gold accent-foreground; --ring, --sidebar-*, --chart-* all gold/grey/black family
+   139→- Dark mode: brighter gold primary oklch(0.8 0.14 85)
+   140→- Badge unification to theme: product-card TypeBadge — Buy Now = solid gold w/ dark text, Custom Order = black bg + gold text + gold border; % OFF badge red → black bg + gold text; "In stock" emerald → gold
+   141→- shop-view type filter Cart badge → gold; admin-products type badges → gold/black-gold; contact-view "Get a Quote" emerald button → default gold primary
+   142→- Kept intentionally: WhatsApp green buttons/icons (brand recognition), emerald success states (order/quote confirmation), red only for destructive delete actions
+   143→- Lint: 0 errors
+   144→- Browser-verified via VLM: hero eyebrow/CTAs/slider dots gold ✓; section eyebrows + card accents gold ✓; shop badges gold+black ✓; footer gold accents on dark ✓; admin sidebar active gold + stat icons gold + ADMIN PANEL label gold ✓; cohesive grey/black/gold everywhere; 0 console errors on fresh reload
+   145→
+   146→Stage Summary:
+   147→- Full theme conversion to grey/black/golden: primary gold oklch(0.72 0.125 83) (light) / oklch(0.8 0.14 85) (dark), gold-foreground dark text, gold-tinted accents
+   148→- All product/type/discount badges unified to gold+black; semantic colors (WhatsApp green, success green, destructive red) retained
+   149→
+   150→---
+   151→Task ID: 9-shop-dropdown
+   152→Agent: Z.ai Code (main agent)
+   153→Task: Add Shop dropdown in navbar like the Services mega menu
+   154→
+   155→Work Log:
+   156→- constants.ts: NAV_LINKS Shop entry now has menu: "shop"; Services uses menu: "services" (replaced mega flag)
+   157→- header.tsx: megaOpen boolean → openMenu: "services" | "shop" | null state; header fetches categories via fetchCategories (same as footer)
+   158→- Desktop: SHOP nav button now shows chevron + opens on hover; Shop panel = white dropdown below black bar with "Shop by Category" heading, "BROWSE FULL SHOP →" top-right link, 4-col grid of 8 category image cards (category photo + dark gradient + name/product-count overlay, hover zoom)
+   159→- Services mega menu unchanged; both panels close on header mouseLeave / route change
+   160→- Mobile sheet: added "Shop Categories" accordion below Services accordion — 8 categories with thumbnail images + Browse Full Shop link
+   161→- Lint: 0 errors. Browser-verified: hover SHOP → panel opens (VLM confirmed 8 category cards, no broken images); click "3D Letter Signs" → #/shop?cat=3d-letters; Services menu still opens on hover; mobile accordion expands showing all 8 categories + LED click → #/shop?cat=led-signs; 0 console/page errors
+   162→
+   163→Stage Summary:
+   164→- Shop dropdown live: desktop hover dropdown (8 category image cards) + mobile Shop Categories accordion; Services menu behavior preserved
+   165→
+   166→---
+   167→Task ID: 10-shop-subcategories
+   168→Agent: Z.ai Code (main agent)
+   169→Task: Shop dropdown mega menu — add a categories navbar where selecting a category shows its related subcategories
+   170→
+   171→Work Log:
+   172→- Prisma schema: new Subcategory model (id/slug/name/categoryId/sortOrder, FK→Category, Product[]); Category.subcategories back-relation; Product.subcategoryId (nullable FK → Subcategory)
+   173→- bun run db:push (non-destructive, new table + nullable column); dev server restarted because in-memory Prisma client was stale (Unknown field `subcategories` error gone after restart)
+   174→- scripts/seed-subcategories.ts (idempotent): 23 subcategories across all 8 categories, all 23 existing products assigned; taxonomy: LED/Desk/Wall Name Plates; Backlit Panels, Window Signs; Chrome/Mini-LED/Steel Letters; Reception, Door Signs, Glass Decals, Wayfinding; Video Walls, Menu Boards, Poster Displays; Snap Frames, ACP, Flex Boards; Vinyl + Event Banners; Calligraphy/Name-Couple/Quote Neon
+   175→- API: /api/categories now includes subcategories (sorted, with productCount via _count); /api/products supports ?sub=<slug> filter; admin POST/PUT products persist subcategoryId with ownership validation (sub must belong to final category; category change clears stale sub)
+   176→- mapProduct (admin-auth.ts) + types.ts + api.ts client: subcategoryId on Product, Subcategory type, sub query param
+   177→- header.tsx Shop mega menu redesigned: 3-column panel — (1) LEFT vertical navbar showing ONLY category names (hover/focus selects, click navigates /shop?cat=), zinc-50 rounded container, active row white+shadow+gold count, (2) MIDDLE panel showing selected category name/description + subcategory buttons in 2-col grid (border cards, gold hover, item counts, click → /shop?cat=X&sub=Y), View All link, empty-state fallback, (3) RIGHT category promo image card (gradient, gold product-count badge, Shop Now →)
+   178→- activeShopCat derives: hovered shopCat → current route cat → first category (auto preselects active category); route-change effect also closes menu on sub param change
+   179→- Mobile drawer: Shop Categories accordion now nests subcategory links (indented, gold hover) under each category row
+   180→- shop-view.tsx: activeSub query param → API filter + gold subcategory chip (X to clear); sidebar SUBCATEGORIES section (All X + subs with counts) shown for active category; setCat() helper clears sub when switching categories; hasFilters includes sub
+   181→- admin-products.tsx: cascading Subcategory select (No subcategory sentinel + subs of chosen category, disabled when none); changing category resets sub; save passes subcategoryId (verified full cycle: edit → change to Glass Decals → save → API shows move → revert → save → original state restored)
+   182→- Lint: 0 errors
+   183→- Browser-verified (agent-browser + VLM): mega menu opens on SHOP hover — left navbar lists all 8 categories only; hovering Office Signage switches middle panel to its 4 subcategories; right image card renders after fixing accidental `hidden` class; clicking Door Signs → #/shop?cat=office-signage&sub=door-signs with 1 product + both chips; sidebar subcategory click switches sub; category click clears sub param; mobile drawer accordion shows nested subs, tapping Islamic Calligraphy Neon → #/shop?cat=neon-art&sub=calligraphy-neon; fresh reload = 0 console/page errors, dev.log clean (all 200s)
+   184→
+   185→Stage Summary:
+   186→- Full subcategory system: DB model + seed (23 subs, all products mapped) + API filters + Shop mega menu (left categories navbar → hover shows subcategories panel → click filters shop) + mobile nested accordion + shop sidebar/chips + admin cascading select
+   187→
+   188→---
+   189→Task ID: 11-auto-categorize
+   190→Agent: Z.ai Code (main agent)
+   191→Task: Auto-assign category/subcategory when adding products (no manual work) + remove item-count numbers from Shop menu + add related logos/icons before category/subcategory text
+   192→
+   193→Work Log:
+   194→- src/lib/category-icons.ts (new): Lucide icon map for all 23 subcategory slugs (Lightbulb, Gem, DoorOpen, MonitorPlay, PartyPopper, Moon, Heart, Quote etc.) + subcategoryIcon() helper with Tag fallback
+   195→- header.tsx Shop mega menu: LEFT navbar rows now show 36px category photo thumbnails (border gold when active) + removed productCount numbers; MIDDLE subcategory cards now show gold Lucide icon before text + removed "N items"; RIGHT promo card Badge "N products" removed (name + Shop Now remain); mobile drawer subcategory links now show icons
+   196→- src/lib/categorize.ts (new, server-only): categorizeProduct() — z-ai-web-dev-sdk LLM picks categoryId/subcategoryId from live DB catalog (strict JSON prompt, 15s timeout, id validation) → keyword+token-overlap fallback (CATEGORY_KEYWORDS regex map + token scoring for cat & sub) → null; returns names/slugs + method ("ai"|"keyword")
+   197→- /api/admin/categorize (new POST, admin-auth): categorize endpoint; tested: "Ramadan Kareem Neon Sign"→neon-art/calligraphy-neon, "Executive Reception Logo Wall"→office-signage/reception-signs, "Birthday Party Vinyl Banner"→banners/event-banners (all method:"ai", ~1s)
+   198→- api.ts: adminCategorizeProduct() client helper + CategorizeResponse type
+   199→- admin-products.tsx: auto-categorization UX — openNew no longer preselects first category (placeholder "Auto-detected from name"); debounced (1.2s) auto-detect while typing a NEW product's name (≥4 chars, never overrides manual pick via catTouched ref, lastDetectKey ref prevents loops); "Detect" manual re-detect button (gold outline, Sparkles/Loader2) next to Category label; "Detecting…"/"Auto-assigned" gold hints; category select onChange marks manual + clears detected label; save validation relaxed for new products (server auto-assigns) — edits still require category
+   200→- POST /api/admin/products: server-side safety net — invalid/missing category → categorizeProduct → first-category fallback; missing/invalid subcategory → auto-detect sub (only if it matches final category); create uses resolved categoryId
+   201→- Browser E2E: mega menu VLM-verified (thumbnails ✓, no counts ✓, gold sub icons ✓, no count badge ✓, no glitches ✓); mobile drawer VLM-verified (thumbnails + sub icons ✓, no counts ✓); subcategory tap → #/shop?cat=neon-art&sub=name-neon ✓; admin flow: Add Product → typed "Wedding Couple Name Neon Heart Sign" → toast "Category auto-assigned: Neon & Wall Art › Name & Couple Neon" → both selects auto-filled → filled desc + image URL → Create → table row shows "Neon & Wall Art" → appears in /api/products?cat=neon-art&sub=name-neon → test product deleted; server auto-assign verified via curl create with NO category → retail-signage assigned → deleted
+   202→- Lint: 0 errors; fresh browser at / = 0 page errors (deep hash-link reload shows inherent SSR-vs-hash-router mismatch, pre-existing architecture behavior, React recovers client-side); dev.log all 200s
+   203→
+   204→Stage Summary:
+   205→- Shop mega menu now shows photo thumbnails on categories + gold icons on subcategories, zero item counts (desktop + mobile)
+   206→- Adding a product auto-assigns category AND subcategory via AI (z-ai-web-dev-sdk LLM with keyword fallback) — debounced live auto-fill while typing, manual Detect button, server-side fallback on create; admin never has to pick manually
+   207→- New: src/lib/category-icons.ts, src/lib/categorize.ts, /api/admin/categorize; modified: header.tsx, admin-products.tsx, api.ts, /api/admin/products POST
+   208→
+   209→---
+   210→Task ID: 12-hero-text-up
+   211→Agent: Z.ai Code (main agent)
+   212→Task: Hero text was too low / cut off below the fold — move it up so it's clearly readable when the website opens
+   213→
+   214→Work Log:
+   215→- Diagnosed with VLM + getBoundingClientRect at 1280x577 viewport: hero was fixed 460/560/660px tall; header (152px) + 660px hero pushed the bottom-anchored caption below the viewport — h1 bottom (601px) exceeded viewport height (577px), CTAs fully hidden
+   216→- home-view.tsx hero fixes:
+   217→  - Hero height now viewport-fitted: h-[calc(100svh-128px)] sm:h-[calc(100svh-144px)] lg:h-[calc(100svh-152px)] with min-h-[400px] max-h-[620px] (subtracts utility bar + nav bar heights per breakpoint) — the whole hero including caption fits the screen on open, any viewport height
+   218→  - Caption (eyebrow/title/subtitle/CTAs) stays bottom-left but now always above the fold; added pr-14 sm:pr-20 so text never reaches the right-edge arrow zone
+   219→  - Circular translucent arrows moved from split left/right at vertical center → stacked vertical pair on the RIGHT edge (right-4 top-1/2) — prevents overlap with the caption at the new shorter hero heights (previously a left-center arrow would collide with the title on short heroes)
+   220→  - Dots stay bottom-center; bottom gradient unchanged
+   221→- Browser-verified at 4 viewports: 1280x577 (h1 y258-366 ✓ visible, CTA bottom 514 < 577 ✓), 1280x800 (CTA bottom 709 < 800 ✓), 1920x1080 ✓, 390x844 mobile (h1 y515-569 ✓, CTA 637 < 844 ✓, arrows y394-434 no text overlap)
+   222→- VLM verified both desktop + mobile screenshots: title fully visible, not cut off; eyebrow/title/subtitle/CTAs clearly readable; arrows don't overlap text; comfortable bottom padding
+   223→- Slider arrows tested (next/prev switch slides, title changes, stays visible); 0 page errors, 0 console errors; lint 0 errors; dev.log all 200s
+   224→
+   225→Stage Summary:
+   226→- Hero now fills exactly the open viewport (minus header) instead of a fixed 660px, so the headline text + CTA buttons are always fully visible and readable the moment the site opens — on any screen height (short preview panels, laptops, desktops, mobile)
+   227→- Arrows restacked on the right edge to stay collision-free at the new adaptive hero height
+   228→
+   229→---
+   230→Task ID: 13-upload-fix
+   231→Agent: Z.ai Code (main agent)
+   232→Task: Fix "Upload failed" error when uploading a picture in admin Add Product dialog
+   233→
+   234→Work Log:
+   235→- Root cause: the POST /api/upload route file was MISSING entirely (src/app/api/upload/route.ts did not exist) — client uploadImage() POSTs FormData to /api/upload, which returned 404 "Server action not found", so the admin product editor and quote reference-image upload both failed with the "Upload failed" toast
+   236→- Created src/app/api/upload/route.ts: multipart form (field "file") → 5MB size limit → content-based format detection via magic bytes (PNG 0x89PNG / JPEG FF D8 FF / WEBP RIFF....WEBP) — detects the REAL format regardless of filename/type, so renamed files (e.g. the site's own JPEGs saved as .png) upload fine and are saved with the correct extension → generated safe name img-<ts>-<randomhex>.<ext> (matches /api/files regex) → fs write to db/uploads → returns { url: "/api/files/<name>" } 201
+   237→- Validations verified via curl: real image → 201 + served bytes identical round-trip (cmp ✓, correct image/jpeg content-type for detected-JPEG-as-png case); fake text-as-png → 400 "Only PNG, JPG or WebP images are allowed"; 6MB file → 400 "Image is too large (max 5MB)"
+   238→- Browser E2E through the actual admin UI: login → Products → Add Product → dispatched a real File (fetched /images/favicon.png → File → DataTransfer → hidden input change event, runs the real handleUpload pipeline) → toast "Image uploaded" appeared → image preview tiles rendered (naturalWidth > 0, served from /api/files/img-…png 200) → second upload → 2 tiles with MAIN badge on first (VLM verified: 2 tiles, gold MAIN badge, dashed Upload tile intact, no broken images; X remove buttons are hover-revealed by design)
+   239→- Same endpoint also fixes the public quote form reference-image upload (same uploadImage() helper)
+   240→- Cleaned up: test img-* files removed from db/uploads (pre-existing quote upload df74c9cd… untouched); lint 0 errors; dev.log shows POST /api/upload 201s; 0 page errors
+   241→
+   242→Stage Summary:
+   243→- Upload failure fixed by creating the missing POST /api/upload route: validates size (5MB) + detects real image format from content (magic bytes), stores in db/uploads under safe generated names, served via /api/files
+   244→- Admin product image upload AND quote reference image upload both work end-to-end now (browser-verified)
+   245→
+   246→---
+   247→Task ID: 14-arrows-sides
+   248→Agent: Z.ai Code (main agent)
+   249→Task: Hero slider arrows were stacked vertically on the right edge — restore classic split: left arrow on the left side, right arrow on the right side
+   250→
+   251→Work Log:
+   252→- home-view.tsx: replaced the stacked right-edge arrow container (flex-col gap-2.5) with two classic absolute buttons — PREV at left-4 top-1/2 -translate-y-1/2 and NEXT at right-4 top-1/2 -translate-y-1/2, same circular translucent style (border-white/20 bg-black/40 backdrop-blur, h-10 md:h-11)
+   253→- Caption block: horizontal clearance added so the side arrows can never cover text on short viewports — pl-12 pr-12 sm:pl-14 sm:pr-16 lg:pl-16 (replaces task-12's pr-only padding; text now starts x64 mobile / x96 desktop, safely right of the left arrow's x16-60 band)
+   254→- Browser-verified with measurements at 3 viewports (visible slide's h1, not off-screen ones): 1280x577 (left arrow x16, right x1220, text x96, no overlap, text visible), 1280x800 (same ✓), 390x844 mobile (left x16/right x334, text x64, arrows y419-459 sit above title y515-569 — zero overlap, text visible)
+   255→- VLM verified both screenshots: left arrow on left edge + right arrow on right edge (not stacked), no overlap with eyebrow/title/subtitle/buttons, title fully readable, arrows vertically centered
+   256→- Arrows functional: next → "Screens That Sell While You Sl…", prev → back to original slide; 0 page errors; lint 0 errors; dev.log clean
+   257→
+   258→Stage Summary:
+   259→- Hero arrows restored to classic split layout: LEFT arrow on the left edge, RIGHT arrow on the right edge, vertically centered — while keeping the hero text fully readable on load (caption padded inward so arrows never cover text at any viewport/hero height)
+   260→
+   261→---
+   262→Task ID: 15-ai-desc
+   263→Agent: Z.ai Code (main agent)
+   264→Task: Product add karte waqt description likhne mein time lagta tha — AI auto-generate the product description, SEO-optimized so it ranks top
+   265→
+   266→Work Log:
+   267→- src/lib/describe.ts (new, server-only): generateProductDescription() — z-ai-web-dev-sdk LLM writes an SEO-optimized description using a top-ranking-style prompt: exact product name in the first sentence (primary keyword), category/subcategory as secondary keywords, long-tail phrases ("custom ... in Lahore", "buy ... online in Pakistan"), 150-220 words in 3 paragraphs + up to 4 "• " feature bullets, benefit-led copy, type-aware CTA (Buy Now → order/delivery/COD; Custom Order → free quote + design support); also returns metaTitle (≤60 chars), metaDescription (≤160 chars) and 6-8 lowercase keywords; cleanProse() strips fences/headings/bold/emoji and forces bullets onto own lines; 30s timeout; deterministic template fallback (method:"template") so admin is never blocked; resolves category/subcategory names from DB for keyword context; accepts admin notes as hints + variation counter for regenerate
+   268→- /api/admin/generate-description (new POST, admin-auth): validates name, type, price, variation (1-20); tested via curl → method:"ai", 204-word description with keywords
+   269→- api.ts: adminGenerateDescription() client helper + GenerateDescriptionResponse type
+   270→- admin-products.tsx: Description field now has a gold-outline "Write with AI" button (Wand2 icon → Loader2 while "Writing…"); AUTO-WRITES the description for a NEW product once the name settles (2.5s debounce, only while empty, never after manual typing, no retry loop on failure via lastGenKey ref); "Regenerate" label when text exists — each click increments variation for a fresh angle; short admin notes (<120 chars) are passed as hints so AI incorporates them (verified: "red acrylic, 24 inch, glowing border" → "premium red acrylic and a stunning glowing border"); "AI-written" gold hint + "SEO-ready: N words · keywords: ..." line under the textarea; manual textarea typing sets descTouched → auto-gen disabled; openEdit never auto-rewrites existing descriptions; category auto-detect effect now stops once a category is assigned (avoids redundant re-detect toasts when the description fills)
+   271→- product-detail-view.tsx: description now renders with whitespace-pre-line (multi-paragraph + bullets display properly instead of one collapsed paragraph)
+   272→- E2E browser-verified: Add Product → typed "Bakery Display Chiller Top LED Sign" → category auto-assigned (LED & Illuminated Signs) + AI description auto-written (name first, Lahore/Pakistan keywords, 4 bullets, quote CTA) → image URL → Create → product page renders paragraphs + bullets → edit → typed notes → Regenerate → new variation incorporating notes → test product deleted; VLM-verified dialog (AI-written hint, Regenerate button, SEO-ready line); VLM "overlap" claim disproven via DOM measurement (elements in different grid columns); 0 page/console errors; lint 0 errors; dev.log all 200s (generate-description 4.6s/6.3s LLM latency)
+   273→
+   274→Stage Summary:
+   275→- Adding a product now needs NO manual writing: type the name → category + subcategory auto-assigned AND an SEO-optimized description auto-written (primary keyword first, location + long-tail keywords, feature bullets, type-aware CTA); "Write with AI / Regenerate" button for manual control with variation; admin notes become AI hints; SEO meta info (title/description/keywords) shown in the form; template fallback keeps the flow working if AI is down
+   276→- New: src/lib/describe.ts, /api/admin/generate-description; modified: api.ts, admin-products.tsx, product-detail-view.tsx
+   277→
+   278→---
+   279→Task ID: 16-a
+   280→Agent: image-generation-runner
+   281→Task: Generate 8 client logo images for Our Clients homepage section
+   282→
+   283→Work Log:
+   284→- Read worklog.md tail for project context (Madni Advertiser signage site, images live in /public/images)
+   285→- CLI syntax probe: `z-ai imagegen` was unknown — correct subcommand per `z-ai --help` is `z-ai image -p <prompt> -o <path>` (default size 1024x1024 = square, ideal for rounded-full circular crop)
+   286→- Generated all 8 fictional Pakistani business client logos in two parallel batches of 4 (no content-filter failures, 0 retries needed) — every prompt appended: "square composition, logo centered with generous margin, emblem occupies middle 70 percent, flat solid white background, professional brand emblem, vector illustration style, no readable text or words, crisp edges" (spelled-out names avoided; monograms kept abstract)
+   287→  1. client-cafe-mocha.png — minimal coffee cup + steam swirls in circular badge, warm brown/cream
+   288→  2. client-al-shifa-hospital.png — medical cross with palm-leaf accent, teal/white
+   289→  3. client-royal-palace.png — golden crown above abstract monogram, maroon/gold
+   290→  4. client-technova.png — geometric letter T from circuit lines + nodes, violet/charcoal
+   291→  5. client-green-valley.png — open book with sprouting leaf, green/navy
+   292→  6. client-megamart.png — double-M monogram in shopping basket, red/yellow
+   293→  7. client-fitzone.png — dumbbell with lightning bolt, orange/black
+   294→  8. client-spice-route.png — chili pepper with crossed fork & spoon, deep red/gold
+   295→- Verified via ls -la + file: all 8 exist, non-empty (35-102 KB), all 1024x1024 square
+   296→- Note: files are JPEG data with .png extension — same as existing project images (hero-1.png, p-banner-birthday.png), browsers render fine; no conversion applied to stay consistent with project convention
+   297→
+   298→Stage Summary:
+   299→- 8 client logo images generated to /home/z/my-project/public/images/: client-cafe-mocha.png, client-al-shifa-hospital.png, client-royal-palace.png, client-technova.png, client-green-valley.png, client-megamart.png, client-fitzone.png, client-spice-route.png (all 1024x1024 square, centered emblem, flat white background — ready for circular rounded-full crop)
+   300→- No persistent failures; all generations succeeded on first attempt
+   301→
+   302→---
+   303→Task ID: 16-clients
+   304→Agent: Z.ai Code (main agent)
+   305→Task: Homepage "Our Clients" section — client logos in round frames (between hero and Shop by Category), click a logo → show that client's project details
+   306→
+   307→Work Log:
+   308→- Prisma: new Client (name, logo, industry, sortOrder) + ClientProject (title, description, image, year, sortOrder, clientId FK, onDelete: Cascade) models → bun run db:push; dev server restarted (old Prisma client instance in memory caused db.client undefined)
+   309→- Task 16-a (subagent): generated 8 square client logos via z-ai image CLI → public/images/client-*.png (Cafe Mocha, Al-Shifa Hospital, Royal Palace Hotel, TechNova Solutions, Green Valley School, MegaMart, FitZone Gym, Spice Route)
+   310→- scripts/seed-clients.ts (new): 8 demo clients × 2 projects each (16 total) using existing proj-*/p-* images; idempotent (skips if clients exist)
+   311→- API: GET /api/clients (public, clients + projects sorted); admin CRUD: GET/POST /api/admin/clients, PUT/DELETE /api/admin/clients/[id], POST /api/admin/clients/[id]/projects, PUT/DELETE /api/admin/projects/[id] (all admin-auth, validation incl. year 1900-2200)
+   312→- types.ts: Client + ClientProject types; api.ts: fetchClients() + adminFetchClients/adminSaveClient/adminDeleteClient/adminSaveClientProject/adminDeleteClientProject helpers
+   313→- home-view.tsx: new section 1.5 "Our Clients" exactly between hero and Shop by Category — centered wrapping grid of round logo frames (rounded-full, zinc ring → gold ring + lift + shadow on hover), client name + gold project-count chip + industry label under each; click → Dialog with round logo header (name, industry, "N projects"), project cards (16:9 image, year badge, title, description), empty-state text, "Get a Free Quote" CTA (closes dialog → /quote); skeletons while loading
+   314→- admin-clients.tsx (new): Clients tab in admin panel — client cards (round logo, name, industry, projects list with thumbnails) + Add/Edit/Delete client dialog (logo upload via /api/upload + URL input, round live preview) + Add/Edit/Delete project dialog (image upload + preview, title, description, year) + both delete confirmations
+   315→- admin-view.tsx: Clients tab added (Building2 icon) to sidebar
+   316→- E2E browser-verified: section renders 8 round logos after hero / before Shop by Category (section order: Featured projects → Our clients → Shop by category); Cafe Mocha click → dialog (2 projects, images loaded, year badges, CTA works → #/quote, dialog closes); VLM-verified desktop section (round frames ✓, logos centered ✓, names + industries ✓, rings + spacing ✓, no glitches) and dialog (round logo + name + industry header ✓, project cards ✓); mobile 390px (centered wrapping grid, readable, no overflow); admin flow: Add Client (Test Pharma Labs) → Add Project (Test Lab Reception Wall) → appeared on homepage → dialog showed it → deleted → back to 8 clients; 0 page/console errors; footer still bottom; lint 0 errors; dev.log all 200s
+   317→
+   318→Stage Summary:
+   319→- Homepage now has an "Our Clients" section between the hero and Shop by Category: client logos in circular gold-ringed frames; clicking any logo opens that client's project details (images, titles, descriptions, years) with a quote CTA
+   320→- Fully admin-manageable: new Clients tab with client CRUD (round logo upload) + per-client project CRUD — additions appear on the homepage immediately
+   321→- New: prisma Client/ClientProject models, scripts/seed-clients.ts, /api/clients, /api/admin/clients(+/[id]/projects), /api/admin/projects/[id], admin-clients.tsx; modified: home-view.tsx, admin-view.tsx, api.ts, types.ts; 8 new logo images
+   322→
+   323→---
+   324→Task ID: 17-real-urls
+   325→Agent: Z.ai Code (main agent)
+   326→Task: Real clean URLs instead of hash routes — /shop, /portfolio etc., and client logo click → /casestudy/portfolio/<brand-name>
+   327→
+   328→Work Log:
+   329→- Prisma: Client.slug (unique) added — db:push blocked by required column on 8 existing rows → resolved via prisma generate + raw SQL ALTER TABLE (default "") + backfill (slugify(name)) + db:push (added unique index); scripts/seed-clients.ts now seeds slugs
+   330→- src/lib/router.tsx REWRITTEN: hash router → History-API router — parsePath() (path + query), initial state "/" on server AND client (SSR HTML matches first client render → no structural hydration mismatch), useLayoutEffect syncs the real URL (location.pathname) BEFORE first paint so direct deep loads show the right page with no visible flash; navigate() uses history.pushState/replaceState; popstate listener keeps browser Back/Forward working; legacy "#/shop" hash links auto-redirect to "/shop" via replaceState; scroll-reset-on-path-change + keepScroll preserved
+   331→- next.config.ts: fallback-phase rewrites — "/:path*" → "/" (fallback runs AFTER all real routes: /api/*, dynamic API routes, public files — so APIs and images untouched, but any clean SPA URL is served by the single "/" page; still only ONE Next.js route exists)
+   332→- app.tsx: route segments now [first, second, third]; new case: first="casestudy" && second="portfolio" && third → <CaseStudyView slug={third}/>; "casestudy" added to the NotFound guard list
+   333→- case-study-view.tsx (NEW): full case-study page — dark hero with the client's round logo (gold ring), name, industry, "N projects delivered" + breadcrumb (Home / Portfolio / Client); projects grid (image, year badge, title, description; first project full-width when odd count); empty-state; dark CTA banner ("Want work like this for your business?" + Get a Free Quote → /quote); View Full Portfolio button; loading skeletons + 404 state with the wrong slug shown
+   334→- home-view.tsx: Our Clients logo click now navigates to /casestudy/portfolio/<slug> (dialog removed — page URL instead, per request)
+   335→- Client CRUD APIs: slug in GET responses; POST auto-generates unique slug (slugify(name) + -2/-3…); PUT regenerates slug when name changes or explicit slug given (uniqueness-checked); admin-clients.tsx: "Case Study URL" field showing /casestudy/portfolio/<slug> (auto-filled from name while typing a new client, editable); admin-view.tsx: 2 remaining "#/" anchors → real "/" hrefs
+   336→- E2E verified with agent-browser: direct loads (fresh navigation) of /shop ("Signage Shop" h1), /casestudy/portfolio/royal-palace-hotel (logo+2 projects), /portfolio, /product/gym-motivation-neon-sign, /quote, /admin — all render correct views with clean URLs (no hash); homepage logo click → URL becomes /casestudy/portfolio/cafe-mocha with h1+breadcrumb+2 project cards+CTA; browser Back → "/" and Forward → case study again (popstate works); mega-menu click → /shop?cat=neon-art (query params intact, filtered shop); legacy hash link "/#/shop" auto-redirects to "/shop"; admin: new client "Test Burger Co" → auto-slug "test-burger-co" → /casestudy/portfolio/test-burger-co renders immediately → deleted (cleanup verified); mobile 390px case study: no horizontal overflow, CTA visible; VLM-verified full case-study page (hero, breadcrumb, cards, year badges, CTA, footer all present)
+   337→- Verified the ONE console hydration warning (aria-controls useId diff in Header Sheet) is PRE-EXISTING: temporarily reverted router.tsx to the old hash version → same warning on fresh / load → restored new router (not a regression; attribute-only, React 19 + Radix dev-mode artifact)
+   338→- APIs verified untouched: /api/clients, /api/categories, /api/products/[slug], /images/* all 200; lint 0 errors (one intentional eslint-disable for set-state-in-layout-effect, same pattern as admin-view)
+   339→
+   340→Stage Summary:
+   341→- The site now uses REAL clean URLs: /shop, /portfolio, /product/<slug>, /services/<slug>, /quote, /admin — and client logos link to /casestudy/portfolio/<client-slug> full case-study pages (replacing the popup dialog)
+   342→- Legacy #/hash links still work (auto-redirect to the clean path); browser back/forward fully functional; all /api routes and static assets unaffected (fallback rewrites)
+   343→- Client URLs are slug-based and admin-manageable (auto-generated from name, editable); new clients get a working case study URL instantly
+   344→- New: case-study-view.tsx; rewritten: router.tsx (History API); modified: next.config.ts (fallback rewrites), app.tsx, home-view.tsx, admin-clients.tsx, admin-view.tsx, api.ts, types.ts, clients/admin-clients APIs, prisma schema + seed
+   345→
