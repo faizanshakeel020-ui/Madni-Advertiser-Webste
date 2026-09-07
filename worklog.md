@@ -225,3 +225,20 @@ Work Log:
 Stage Summary:
 - Hero now fills exactly the open viewport (minus header) instead of a fixed 660px, so the headline text + CTA buttons are always fully visible and readable the moment the site opens — on any screen height (short preview panels, laptops, desktops, mobile)
 - Arrows restacked on the right edge to stay collision-free at the new adaptive hero height
+
+---
+Task ID: 13-upload-fix
+Agent: Z.ai Code (main agent)
+Task: Fix "Upload failed" error when uploading a picture in admin Add Product dialog
+
+Work Log:
+- Root cause: the POST /api/upload route file was MISSING entirely (src/app/api/upload/route.ts did not exist) — client uploadImage() POSTs FormData to /api/upload, which returned 404 "Server action not found", so the admin product editor and quote reference-image upload both failed with the "Upload failed" toast
+- Created src/app/api/upload/route.ts: multipart form (field "file") → 5MB size limit → content-based format detection via magic bytes (PNG 0x89PNG / JPEG FF D8 FF / WEBP RIFF....WEBP) — detects the REAL format regardless of filename/type, so renamed files (e.g. the site's own JPEGs saved as .png) upload fine and are saved with the correct extension → generated safe name img-<ts>-<randomhex>.<ext> (matches /api/files regex) → fs write to db/uploads → returns { url: "/api/files/<name>" } 201
+- Validations verified via curl: real image → 201 + served bytes identical round-trip (cmp ✓, correct image/jpeg content-type for detected-JPEG-as-png case); fake text-as-png → 400 "Only PNG, JPG or WebP images are allowed"; 6MB file → 400 "Image is too large (max 5MB)"
+- Browser E2E through the actual admin UI: login → Products → Add Product → dispatched a real File (fetched /images/favicon.png → File → DataTransfer → hidden input change event, runs the real handleUpload pipeline) → toast "Image uploaded" appeared → image preview tiles rendered (naturalWidth > 0, served from /api/files/img-…png 200) → second upload → 2 tiles with MAIN badge on first (VLM verified: 2 tiles, gold MAIN badge, dashed Upload tile intact, no broken images; X remove buttons are hover-revealed by design)
+- Same endpoint also fixes the public quote form reference-image upload (same uploadImage() helper)
+- Cleaned up: test img-* files removed from db/uploads (pre-existing quote upload df74c9cd… untouched); lint 0 errors; dev.log shows POST /api/upload 201s; 0 page errors
+
+Stage Summary:
+- Upload failure fixed by creating the missing POST /api/upload route: validates size (5MB) + detects real image format from content (magic bytes), stores in db/uploads under safe generated names, served via /api/files
+- Admin product image upload AND quote reference image upload both work end-to-end now (browser-verified)
