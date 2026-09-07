@@ -106,9 +106,9 @@ export function AdminView() {
             <Image
               src="/images/logo.png"
               alt="Madni Advertiser logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
+              width={48}
+              height={48}
+              className="h-11 w-11 object-contain"
             />
             <p className="text-[10px] font-bold tracking-[0.3em] text-primary">ADMIN&nbsp;PANEL</p>
           </div>
@@ -213,9 +213,9 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
           <Image
             src="/images/logo.png"
             alt="Madni Advertiser logo"
-            width={64}
-            height={64}
-            className="mx-auto h-16 w-16 object-contain"
+            width={96}
+            height={96}
+            className="mx-auto h-20 w-20 object-contain"
           />
           <h1 className="mt-4 font-display text-2xl font-bold text-white">Admin Panel</h1>
           <p className="mt-1 text-sm text-zinc-400">Madni Advertiser — staff access only</p>

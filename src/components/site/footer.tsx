@@ -36,9 +36,9 @@ export function Footer() {
             <Image
               src="/images/logo.png"
               alt="Madni Advertiser logo"
-              width={72}
-              height={72}
-              className="h-16 w-16 object-contain"
+              width={96}
+              height={96}
+              className="h-20 w-20 object-contain sm:h-24 sm:w-24"
             />
           </div>
           <p className="mt-4 text-sm leading-relaxed text-zinc-400">

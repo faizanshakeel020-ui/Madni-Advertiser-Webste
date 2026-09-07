@@ -48,7 +48,7 @@ export function Header() {
     <>
       {/* ---------- Top utility bar (light gray) ---------- */}
       <div className="border-b border-zinc-300/70 bg-zinc-200">
-        <div className="container-site flex h-14 items-center justify-between gap-4 sm:h-16 lg:h-[72px]">
+        <div className="container-site flex h-20 items-center justify-between gap-4 sm:h-[88px] lg:h-24">
           <Logo />
 
           {/* Contact blocks */}

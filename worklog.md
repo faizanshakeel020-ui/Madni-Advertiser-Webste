@@ -113,3 +113,18 @@ Work Log:
 Stage Summary:
 - Site interface now matches reference style: gray utility bar + black sticky uppercase nav + photography-first hero with circular translucent arrows
 - All existing functionality preserved: mega menu, search, cart badge, mobile sheet menu, dual CTAs, WhatsApp button
+
+---
+Task ID: 7-logo-size
+Agent: Z.ai Code (main agent)
+Task: Enlarge logo across the site (user: "logo size is too small")
+
+Work Log:
+- logo.tsx (header + mobile sheet): h-12/14 → h-16 (mobile), h-[72px] (sm), h-20 (lg) — width/height attrs 96px for sharpness
+- header.tsx utility bar height increased to match: h-14/sm:h-16/lg:h-[72px] → h-20 sm:h-[88px] lg:h-24
+- footer.tsx brand logo: h-16 → h-20 mobile, h-24 sm+
+- admin-view.tsx: top bar logo h-9 → h-11; login screen logo h-16 → h-20
+- Lint: 0 errors. Browser-verified: desktop logo 80px measured (VLM: large, readable, well-proportioned, no cramping); mobile 390px header + GET QUOTE + black nav all fit without overflow; footer logo 80px measured via eval; 0 console errors on fresh reload (1 transient hot-reload artifact)
+
+Stage Summary:
+- Logo enlarged everywhere: header ~2x bigger, footer 25% bigger, admin top bar + login bigger; utility bar height raised to fit

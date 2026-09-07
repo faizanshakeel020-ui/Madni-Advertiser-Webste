@@ -14,10 +14,10 @@ export function Logo() {
       <Image
         src="/images/logo.png"
         alt="Madni Advertiser logo"
-        width={56}
-        height={56}
+        width={96}
+        height={96}
         priority
-        className="h-12 w-12 object-contain lg:h-14 lg:w-14"
+        className="h-16 w-16 object-contain sm:h-[72px] sm:w-[72px] lg:h-20 lg:w-20"
       />
     </button>
   );
