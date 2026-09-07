@@ -184,3 +184,24 @@ Work Log:
 
 Stage Summary:
 - Full subcategory system: DB model + seed (23 subs, all products mapped) + API filters + Shop mega menu (left categories navbar → hover shows subcategories panel → click filters shop) + mobile nested accordion + shop sidebar/chips + admin cascading select
+
+---
+Task ID: 11-auto-categorize
+Agent: Z.ai Code (main agent)
+Task: Auto-assign category/subcategory when adding products (no manual work) + remove item-count numbers from Shop menu + add related logos/icons before category/subcategory text
+
+Work Log:
+- src/lib/category-icons.ts (new): Lucide icon map for all 23 subcategory slugs (Lightbulb, Gem, DoorOpen, MonitorPlay, PartyPopper, Moon, Heart, Quote etc.) + subcategoryIcon() helper with Tag fallback
+- header.tsx Shop mega menu: LEFT navbar rows now show 36px category photo thumbnails (border gold when active) + removed productCount numbers; MIDDLE subcategory cards now show gold Lucide icon before text + removed "N items"; RIGHT promo card Badge "N products" removed (name + Shop Now remain); mobile drawer subcategory links now show icons
+- src/lib/categorize.ts (new, server-only): categorizeProduct() — z-ai-web-dev-sdk LLM picks categoryId/subcategoryId from live DB catalog (strict JSON prompt, 15s timeout, id validation) → keyword+token-overlap fallback (CATEGORY_KEYWORDS regex map + token scoring for cat & sub) → null; returns names/slugs + method ("ai"|"keyword")
+- /api/admin/categorize (new POST, admin-auth): categorize endpoint; tested: "Ramadan Kareem Neon Sign"→neon-art/calligraphy-neon, "Executive Reception Logo Wall"→office-signage/reception-signs, "Birthday Party Vinyl Banner"→banners/event-banners (all method:"ai", ~1s)
+- api.ts: adminCategorizeProduct() client helper + CategorizeResponse type
+- admin-products.tsx: auto-categorization UX — openNew no longer preselects first category (placeholder "Auto-detected from name"); debounced (1.2s) auto-detect while typing a NEW product's name (≥4 chars, never overrides manual pick via catTouched ref, lastDetectKey ref prevents loops); "Detect" manual re-detect button (gold outline, Sparkles/Loader2) next to Category label; "Detecting…"/"Auto-assigned" gold hints; category select onChange marks manual + clears detected label; save validation relaxed for new products (server auto-assigns) — edits still require category
+- POST /api/admin/products: server-side safety net — invalid/missing category → categorizeProduct → first-category fallback; missing/invalid subcategory → auto-detect sub (only if it matches final category); create uses resolved categoryId
+- Browser E2E: mega menu VLM-verified (thumbnails ✓, no counts ✓, gold sub icons ✓, no count badge ✓, no glitches ✓); mobile drawer VLM-verified (thumbnails + sub icons ✓, no counts ✓); subcategory tap → #/shop?cat=neon-art&sub=name-neon ✓; admin flow: Add Product → typed "Wedding Couple Name Neon Heart Sign" → toast "Category auto-assigned: Neon & Wall Art › Name & Couple Neon" → both selects auto-filled → filled desc + image URL → Create → table row shows "Neon & Wall Art" → appears in /api/products?cat=neon-art&sub=name-neon → test product deleted; server auto-assign verified via curl create with NO category → retail-signage assigned → deleted
+- Lint: 0 errors; fresh browser at / = 0 page errors (deep hash-link reload shows inherent SSR-vs-hash-router mismatch, pre-existing architecture behavior, React recovers client-side); dev.log all 200s
+
+Stage Summary:
+- Shop mega menu now shows photo thumbnails on categories + gold icons on subcategories, zero item counts (desktop + mobile)
+- Adding a product auto-assigns category AND subcategory via AI (z-ai-web-dev-sdk LLM with keyword fallback) — debounced live auto-fill while typing, manual Detect button, server-side fallback on create; admin never has to pick manually
+- New: src/lib/category-icons.ts, src/lib/categorize.ts, /api/admin/categorize; modified: header.tsx, admin-products.tsx, api.ts, /api/admin/products POST

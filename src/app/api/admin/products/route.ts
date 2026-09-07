@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest, mapProduct } from "@/lib/admin-auth";
 import { slugify } from "@/lib/format";
+import { categorizeProduct, type CategorizeResult } from "@/lib/categorize";
 
 /** GET /api/admin/products — full catalog (no pagination) */
 export async function GET() {
@@ -34,22 +35,48 @@ export async function POST(req: NextRequest) {
     const dupe = await db.product.findUnique({ where: { slug } });
     if (dupe) return NextResponse.json({ error: `Slug "${slug}" already exists` }, { status: 400 });
 
-    // Optional subcategory — must belong to the chosen category
+    const description = String(b.description ?? "").trim();
+
+    // ---- Category: auto-detect (AI + keyword fallback) when missing/invalid ----
+    let categoryId = String(b.categoryId ?? "").trim();
+    if (categoryId) {
+      const catExists = await db.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+      if (!catExists) categoryId = "";
+    }
+    let auto: CategorizeResult | null = null;
+    if (!categoryId) {
+      auto = await categorizeProduct(name, description);
+      if (auto) {
+        categoryId = auto.categoryId;
+      } else {
+        const first = await db.category.findFirst({ orderBy: { sortOrder: "asc" }, select: { id: true } });
+        categoryId = first?.id ?? "";
+      }
+      if (!categoryId) return NextResponse.json({ error: "No categories exist yet" }, { status: 400 });
+    }
+
+    // ---- Subcategory: validate provided, auto-detect when missing ----
     let subcategoryId: string | null = null;
     if (b.subcategoryId) {
       const sub = await db.subcategory.findUnique({ where: { id: String(b.subcategoryId) } });
-      if (sub && sub.categoryId === String(b.categoryId ?? "")) subcategoryId = sub.id;
+      if (sub && sub.categoryId === categoryId) subcategoryId = sub.id;
+    }
+    if (!subcategoryId) {
+      if (!auto) auto = await categorizeProduct(name, description);
+      if (auto && auto.categoryId === categoryId && auto.subcategoryId) {
+        subcategoryId = auto.subcategoryId;
+      }
     }
 
     const product = await db.product.create({
       data: {
         name,
         slug,
-        description: String(b.description ?? "").trim(),
+        description,
         price: b.price === null || b.price === undefined || b.price === "" ? null : Number(b.price),
         oldPrice: b.oldPrice === null || b.oldPrice === undefined || b.oldPrice === "" ? null : Number(b.oldPrice),
         type: b.type === "BUY_NOW" ? "BUY_NOW" : "CUSTOM_ORDER",
-        categoryId: String(b.categoryId ?? ""),
+        categoryId,
         subcategoryId,
         images: JSON.stringify(Array.isArray(b.images) ? b.images : []),
         specs: JSON.stringify(Array.isArray(b.specs) ? b.specs : []),

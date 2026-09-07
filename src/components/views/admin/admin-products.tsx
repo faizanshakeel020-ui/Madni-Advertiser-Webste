@@ -3,12 +3,13 @@
 /**
  * Admin — Products management (add/edit/delete, images, categories, type, stock).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Loader2,
   Pencil,
   Plus,
   Search,
+  Sparkles,
   Star,
   Trash2,
   Upload,
@@ -46,7 +47,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminDeleteProduct, adminFetchProducts, adminSaveProduct, fetchCategories, uploadImage } from "@/lib/api";
+import {
+  adminCategorizeProduct,
+  adminDeleteProduct,
+  adminFetchProducts,
+  adminSaveProduct,
+  fetchCategories,
+  uploadImage,
+} from "@/lib/api";
 import { formatPKR, slugify } from "@/lib/format";
 import { useRoute } from "@/lib/router";
 import type { Category, Product, ProductOption, ProductSpec } from "@/lib/types";
@@ -98,6 +106,11 @@ export function AdminProducts() {
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [imgUrlInput, setImgUrlInput] = useState("");
+  // AI auto-categorization state
+  const [detecting, setDetecting] = useState(false);
+  const [detectedLabel, setDetectedLabel] = useState<string | null>(null);
+  const catTouched = useRef(false); // set when the admin manually picks a category
+  const lastDetectKey = useRef(""); // "name|desc" of the last auto-detect run
 
   const load = async () => {
     setLoading(true);
@@ -127,13 +140,73 @@ export function AdminProducts() {
     [products, search]
   );
 
+  /** Ask the backend to auto-assign category + subcategory from the product name/description. */
+  const runDetect = useCallback(
+    async (name: string, description: string) => {
+      if (!name.trim()) return;
+      setDetecting(true);
+      try {
+        const res = await adminCategorizeProduct(name.trim(), description.trim() || undefined);
+        if (res?.categoryId) {
+          setEditing((s) =>
+            s && !catTouched.current
+              ? { ...s, categoryId: res.categoryId, subcategoryId: res.subcategoryId ?? "" }
+              : s
+          );
+          const label = `${res.categoryName}${res.subcategoryName ? ` › ${res.subcategoryName}` : ""}`;
+          setDetectedLabel(label);
+          toast.success(`Category auto-assigned: ${label}`, {
+            description: "You can still change it manually.",
+          });
+        }
+      } catch {
+        // silent — admin can still pick manually; server retries on save
+      } finally {
+        setDetecting(false);
+      }
+    },
+    []
+  );
+
+  // Auto-detect while typing a NEW product's name (debounced, never overrides a manual pick)
+  useEffect(() => {
+    if (!editing || editing.id || catTouched.current) return;
+    const name = editing.name.trim();
+    const desc = editing.description.trim();
+    if (name.length < 4) return;
+    const key = `${name}|${desc}`;
+    if (key === lastDetectKey.current) return;
+    const t = setTimeout(() => {
+      lastDetectKey.current = key;
+      void runDetect(name, desc);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [editing, runDetect]);
+
+  const detectNow = () => {
+    if (!editing || !editing.name.trim()) {
+      toast.error("Type a product name first");
+      return;
+    }
+    catTouched.current = false; // allow auto-fill again
+    lastDetectKey.current = `${editing.name.trim()}|${editing.description.trim()}`;
+    setDetectedLabel(null);
+    void runDetect(editing.name, editing.description);
+  };
+
   const openNew = () => {
-    setEditing({ ...emptyProduct, categoryId: cats[0]?.id ?? "" });
+    catTouched.current = false;
+    lastDetectKey.current = "";
+    setDetectedLabel(null);
+    setEditing({ ...emptyProduct, categoryId: "" });
     setImgUrlInput("");
     setEditOpen(true);
   };
 
   const openEdit = (p: Product) => {
+    catTouched.current = true; // existing products: never override their category automatically
+    lastDetectKey.current = "";
+    setDetectedLabel(null);
     setEditing({
       id: p.id,
       name: p.name,
@@ -158,7 +231,7 @@ export function AdminProducts() {
   const save = async () => {
     if (!editing) return;
     if (!editing.name.trim()) return toast.error("Product name is required");
-    if (!editing.categoryId) return toast.error("Select a category");
+    if (!editing.categoryId && editing.id) return toast.error("Select a category");
     if (!editing.description.trim()) return toast.error("Description is required");
     if (editing.type === "BUY_NOW" && !editing.price) return toast.error("Buy Now products need a price");
     if (editing.images.length === 0) return toast.error("Add at least one product image");
@@ -333,20 +406,54 @@ export function AdminProducts() {
                   <Input value={editing.slug} onChange={(e) => setEditing((s) => (s ? { ...s, slug: slugify(e.target.value) } : s))} placeholder="auto-generated" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Category *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Category *</Label>
+                    <div className="flex items-center gap-2">
+                      {detecting && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Detecting…
+                        </span>
+                      )}
+                      {!detecting && detectedLabel && !catTouched.current && !editing.id && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Sparkles className="h-3 w-3" aria-hidden="true" /> Auto-assigned
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={detectNow}
+                        disabled={detecting || !editing.name.trim()}
+                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+                      >
+                        {detecting ? (
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" aria-hidden="true" />
+                        )}
+                        Detect
+                      </button>
+                    </div>
+                  </div>
                   <Select
                     value={editing.categoryId}
-                    onValueChange={(v) =>
-                      setEditing((s) => (s ? { ...s, categoryId: v, subcategoryId: "" } : s))
-                    }
+                    onValueChange={(v) => {
+                      catTouched.current = true;
+                      setDetectedLabel(null);
+                      setEditing((s) => (s ? { ...s, categoryId: v, subcategoryId: "" } : s));
+                    }}
                   >
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Auto-detected from name" />
+                    </SelectTrigger>
                     <SelectContent>
                       {cats.map((c) => (
                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-zinc-400">
+                    Auto-detected from the product name — pick manually only if needed.
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Subcategory</Label>
@@ -363,7 +470,7 @@ export function AdminProducts() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-zinc-400">Optional — used by the Shop menu dropdown filters.</p>
+                  <p className="text-xs text-zinc-400">Auto-filled with the category — powers the Shop menu filters.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Type *</Label>

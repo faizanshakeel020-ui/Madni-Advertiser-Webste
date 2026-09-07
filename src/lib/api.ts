@@ -169,6 +169,28 @@ export async function adminDeleteProduct(id: string): Promise<{ ok: boolean }> {
   return jsonFetch(`/api/admin/products/${id}`, { method: "DELETE" });
 }
 
+export type CategorizeResponse = {
+  categoryId: string;
+  categorySlug: string;
+  categoryName: string;
+  subcategoryId: string | null;
+  subcategorySlug: string | null;
+  subcategoryName: string | null;
+  method: string;
+};
+
+/** AI auto-detect the category + subcategory for a product name. */
+export async function adminCategorizeProduct(
+  name: string,
+  description?: string
+): Promise<CategorizeResponse> {
+  return jsonFetch("/api/admin/categorize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, description }),
+  });
+}
+
 export async function adminFetchOrders(): Promise<Order[]> {
   return jsonFetch("/api/admin/orders");
 }

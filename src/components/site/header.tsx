@@ -26,6 +26,7 @@ import { useRoute } from "@/lib/router";
 import { useCart, cartCount } from "@/store/cart";
 import { useMounted } from "@/lib/use-mounted";
 import { fetchCategories } from "@/lib/api";
+import { subcategoryIcon } from "@/lib/category-icons";
 import type { Category } from "@/lib/types";
 
 type Menu = "services" | "shop" | null;
@@ -208,15 +209,19 @@ export function Header() {
                               <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
                             </button>
                             <div className="ml-5 border-l-2 border-zinc-100 pl-2">
-                              {c.subcategories?.map((sub) => (
-                                <button
-                                  key={sub.slug}
-                                  onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
-                                  className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
-                                >
-                                  {sub.name}
-                                </button>
-                              ))}
+                              {c.subcategories?.map((sub) => {
+                                const SubIcon = subcategoryIcon(sub.slug);
+                                return (
+                                  <button
+                                    key={sub.slug}
+                                    onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
+                                    className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                                  >
+                                    <SubIcon className="h-3.5 w-3.5 shrink-0 text-primary/60" aria-hidden="true" />
+                                    {sub.name}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -406,18 +411,30 @@ export function Header() {
                         onMouseEnter={() => setShopCat(c.slug)}
                         onFocus={() => setShopCat(c.slug)}
                         onClick={() => navigate(`/shop?cat=${c.slug}`)}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-bold transition-colors ${
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
                           active
                             ? "bg-white text-zinc-900 shadow-sm"
                             : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                         }`}
                         aria-current={active ? "true" : undefined}
                       >
-                        {c.name}
-                        <span className={`flex items-center gap-1 text-xs font-medium ${active ? "text-primary" : "text-zinc-400"}`}>
-                          {typeof c.productCount === "number" && `${c.productCount}`}
-                          <ChevronRight className={`h-3.5 w-3.5 ${active ? "text-primary" : "text-zinc-300"}`} aria-hidden="true" />
+                        <span
+                          className={`h-9 w-9 shrink-0 overflow-hidden rounded-lg border ${
+                            active ? "border-primary/60" : "border-zinc-200"
+                          }`}
+                        >
+                          <img
+                            src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
                         </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold">{c.name}</span>
+                        <ChevronRight
+                          className={`h-3.5 w-3.5 shrink-0 ${active ? "text-primary" : "text-zinc-300"}`}
+                          aria-hidden="true"
+                        />
                       </button>
                     );
                   })}
@@ -445,18 +462,19 @@ export function Header() {
                       </div>
                       {activeShopCat.subcategories && activeShopCat.subcategories.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3">
-                          {activeShopCat.subcategories.map((sub) => (
-                            <button
-                              key={sub.slug}
-                              onClick={() => navigate(`/shop?cat=${activeShopCat.slug}&sub=${sub.slug}`)}
-                              className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-accent"
-                            >
-                              <span className="text-[13px] font-bold text-zinc-700">{sub.name}</span>
-                              <span className="shrink-0 text-[11px] font-medium text-zinc-400">
-                                {typeof sub.productCount === "number" ? `${sub.productCount} items` : ""}
-                              </span>
-                            </button>
-                          ))}
+                          {activeShopCat.subcategories.map((sub) => {
+                            const SubIcon = subcategoryIcon(sub.slug);
+                            return (
+                              <button
+                                key={sub.slug}
+                                onClick={() => navigate(`/shop?cat=${activeShopCat.slug}&sub=${sub.slug}`)}
+                                className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-accent"
+                              >
+                                <SubIcon className="h-[18px] w-[18px] shrink-0 text-primary" aria-hidden="true" />
+                                <span className="text-[13px] font-bold text-zinc-700">{sub.name}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-center">
@@ -491,7 +509,6 @@ export function Header() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/25 to-transparent" aria-hidden="true" />
                     <div className="absolute inset-x-0 bottom-0 p-4">
-                      <Badge className="mb-1.5 bg-primary text-primary-foreground">{activeShopCat.productCount ?? 0} products</Badge>
                       <p className="font-display text-sm font-bold leading-tight text-white">{activeShopCat.name}</p>
                       <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary group-hover:underline">
                         Shop Now →
