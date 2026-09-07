@@ -242,3 +242,18 @@ Work Log:
 Stage Summary:
 - Upload failure fixed by creating the missing POST /api/upload route: validates size (5MB) + detects real image format from content (magic bytes), stores in db/uploads under safe generated names, served via /api/files
 - Admin product image upload AND quote reference image upload both work end-to-end now (browser-verified)
+
+---
+Task ID: 14-arrows-sides
+Agent: Z.ai Code (main agent)
+Task: Hero slider arrows were stacked vertically on the right edge — restore classic split: left arrow on the left side, right arrow on the right side
+
+Work Log:
+- home-view.tsx: replaced the stacked right-edge arrow container (flex-col gap-2.5) with two classic absolute buttons — PREV at left-4 top-1/2 -translate-y-1/2 and NEXT at right-4 top-1/2 -translate-y-1/2, same circular translucent style (border-white/20 bg-black/40 backdrop-blur, h-10 md:h-11)
+- Caption block: horizontal clearance added so the side arrows can never cover text on short viewports — pl-12 pr-12 sm:pl-14 sm:pr-16 lg:pl-16 (replaces task-12's pr-only padding; text now starts x64 mobile / x96 desktop, safely right of the left arrow's x16-60 band)
+- Browser-verified with measurements at 3 viewports (visible slide's h1, not off-screen ones): 1280x577 (left arrow x16, right x1220, text x96, no overlap, text visible), 1280x800 (same ✓), 390x844 mobile (left x16/right x334, text x64, arrows y419-459 sit above title y515-569 — zero overlap, text visible)
+- VLM verified both screenshots: left arrow on left edge + right arrow on right edge (not stacked), no overlap with eyebrow/title/subtitle/buttons, title fully readable, arrows vertically centered
+- Arrows functional: next → "Screens That Sell While You Sl…", prev → back to original slide; 0 page errors; lint 0 errors; dev.log clean
+
+Stage Summary:
+- Hero arrows restored to classic split layout: LEFT arrow on the left edge, RIGHT arrow on the right edge, vertically centered — while keeping the hero text fully readable on load (caption padded inward so arrows never cover text at any viewport/hero height)

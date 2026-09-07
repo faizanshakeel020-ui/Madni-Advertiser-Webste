@@ -114,9 +114,9 @@ export function HomeView() {
                     className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent"
                     aria-hidden="true"
                   />
-                  {/* caption — bottom left, padded clear of the right-edge arrows */}
+                  {/* caption — bottom left, inset clear of the side arrows */}
                   <div className="container-site absolute inset-x-0 bottom-0">
-                    <div className="max-w-2xl pb-14 pr-14 sm:pb-16 sm:pr-20">
+                    <div className="max-w-2xl pb-14 pl-12 pr-12 sm:pb-16 sm:pl-14 sm:pr-16 lg:pl-16">
                       <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
                         {slide.eyebrow}
                       </p>
@@ -153,23 +153,21 @@ export function HomeView() {
           </div>
         </div>
 
-        {/* circular translucent arrows — stacked on the right edge so they never overlap the caption at any hero height */}
-        <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-2.5">
-          <button
-            onClick={() => embla?.scrollPrev()}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <button
-            onClick={() => embla?.scrollNext()}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </div>
+        {/* circular translucent arrows — left on the left edge, right on the right edge */}
+        <button
+          onClick={() => embla?.scrollPrev()}
+          className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => embla?.scrollNext()}
+          className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60 md:h-11 md:w-11"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
         <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2" role="tablist" aria-label="Slides">
           {SLIDES.map((_, i) => (
             <button
