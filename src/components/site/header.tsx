@@ -156,7 +156,7 @@ export function Header() {
                   </form>
 
                   <nav className="space-y-1" aria-label="Mobile navigation">
-                    {NAV_LINKS.filter((l) => !l.mega).map((link) => (
+                    {NAV_LINKS.filter((l) => !l.menu).map((link) => (
                       <button
                         key={link.href}
                         onClick={() => navigate(link.href)}

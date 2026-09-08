@@ -121,6 +121,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Clickable buttons show pointer cursor (Tailwind v4 defaults buttons to default) */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* ---------- Site utilities ---------- */

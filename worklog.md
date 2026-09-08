@@ -401,3 +401,24 @@ Stage Summary:
 - Our Clients section restored to the ORIGINAL look: centered wrapping grid of round gold-ringed client logos with names + industries (no carousel/arrows) — clicking any logo opens that client's case study page whose projects each show full long SEO descriptions (all 16 verified in DB)
 - Services navbar dropdown now matches the Shop/Projects style: 3-column rich panel with logo/image thumbnails everywhere (left service list with hero thumbnails, middle sub-service cards with image thumbnails, right promo card), hover-to-switch, route-aware preselect, "View All Services" links; mobile accordion also got thumbnails
 - Modified files: src/components/views/home-view.tsx, src/components/site/header.tsx
+
+---
+Task ID: 22-clients-autoplay-nav-fixes
+Agent: Z.ai Code (main agent)
+Task: Our Clients logos in one auto-moving row with manual arrows; pointer cursor on logos; "Read More" instead of category; mobile navbar merge duplicate Services/Shop/Portfolio into single accordion options; confirm admin clients/projects CRUD
+
+Work Log:
+- home-view.tsx: Our Clients rebuilt as a single-row Embla carousel that MOVES BY ITSELF — loop:true + align:"start", setInterval auto-advance every 3.2s via clientsEmbla.scrollNext(); autoplay pauses while hovering (hoverPaused ref on mouseenter/leave) and while dragging (dragPaused ref on pointerdown/up/cancel); row capped at max-w-[1060px] mx-auto so it always overflows on desktop (6-7 logos visible, 8 total) making loop/autoplay/arrow scrolling meaningful at every breakpoint
+- Manual control: desktop round ChevronLeft/ChevronRight buttons flanking the row (always enabled — loop mode is always scrollable); mobile arrows rendered BELOW the row (sm:hidden) + native touch swipe (draggable); drag-click guard kept (>8px pointer displacement after pointerdown = no navigation)
+- Labels: industry/category under brand name replaced with a gold "Read More ›" affordance (text-primary, chevron nudges right on hover) — name (line-clamp-2) + Read More under each round logo; skeleton restored to single-row shape
+- Cursor: root cause = Chrome UA stylesheet gives buttons cursor:default (Tailwind 4.1 preflight has no button cursor rule) — fixed globally in globals.css @layer base: `button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }`; first compile attempt didn't propagate (touch alone didn't trigger Turbopack CSS rebuild — needed a real content change to force recompile); verified after rebuild: all 90 buttons on the page compute to cursor:pointer
+- header.tsx mobile Sheet: plain nav links were filtered with `!l.mega` but NAV_LINKS property was renamed to `menu` (Task 17/20) — so Services/Shop/Portfolio appeared TWICE on mobile (plain link + accordion). Fixed filter to `!l.menu`: plain links = Home/About Us/Contact Us only; Services, Shop Categories, Portfolio each appear ONCE as accordion triggers (tap → dropdown panel with the full sub-navigation)
+- Admin panel (already built in Tasks 16/17/20 — verified working, no changes needed): Clients tab shows all 8 client cards with 24 edit + 24 delete actions (8 clients + 16 projects), "Add Client" per panel and "Add Project" per client; Add Client dialog verified (logo upload/URL, name, auto case-study URL, industry) then cancelled without saving
+- E2E (agent-browser): desktop 1440px — autoplay confirmed by transform sampling (-327→-492→-656→-984px over 16s), arrows click right (-984→-1147) and left (back), TechNova logo click → /casestudy/portfolio/technova-solutions (h1 confirmed), Read More labels ×8, industry labels gone, VLM-verified single row + round frames + gold READ MORE + flanking arrows + no layout issues; mobile 390px — menu shows Home/About/Contact + ONE Services + ONE Shop Categories + ONE Portfolio (counts verified programmatically), Services accordion opens with thumbnails (VLM), carousel autoplay works (-454→-719px), 4 arrows in DOM (2 visible below row), 8 Read More labels, zero horizontal overflow, 2nd logo click → al-shifa-hospital case study, swipe drag 195→60px moved transform 0→-359px; admin login → Clients tab → CRUD counts verified
+- Lint: 0 errors; dev.log: only 200s; 0 page/console errors after full scroll
+
+Stage Summary:
+- Our Clients is now a self-moving single-row logo strip (3.2s auto-advance, loop, pauses on hover/drag) with manual arrows on desktop (flanking) and mobile (below row) + swipe — logos keep the round gold-ring frames, brand names, and now show "Read More ›" instead of the industry label; clicking still opens the client's case study with full long descriptions
+- Pointer cursor now site-wide on all clickable buttons (globals.css base rule)
+- Mobile navbar: Services/Shop/Portfolio merged into single accordion options (duplicates removed)
+- Admin Clients/Projects CRUD confirmed fully functional (add/edit/delete clients and their projects with logo + image uploads)
