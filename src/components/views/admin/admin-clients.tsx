@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Briefcase,
+  Images,
   Loader2,
   Pencil,
   Plus,
@@ -14,6 +15,7 @@ import {
   Trash2,
   Upload,
   Wand2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ import {
   adminSaveClient,
   adminSaveClientProject,
   uploadImage,
+  uploadImages,
 } from "@/lib/api";
 import type { GenerateDescriptionResponse } from "@/lib/api";
 import { slugify } from "@/lib/format";
@@ -66,7 +69,7 @@ type ProjectEdit = {
   clientName: string;
   title: string;
   description: string;
-  image: string;
+  images: string[];
   year: string;
 };
 
@@ -87,6 +90,7 @@ export function AdminClients() {
   const [projectOpen, setProjectOpen] = useState(false);
   const [projectEdit, setProjectEdit] = useState<ProjectEdit | null>(null);
   const [uploadingProjImg, setUploadingProjImg] = useState(false);
+  const [projImgUrlInput, setProjImgUrlInput] = useState("");
   const [deleteProject, setDeleteProject] = useState<ClientProject | null>(null);
 
   // project description AI writer
@@ -199,12 +203,13 @@ export function AdminClients() {
     projLastGenKey.current = "";
     projVariationRef.current = 1;
     setProjSeoInfo(null);
+    setProjImgUrlInput("");
     setProjectEdit({
       clientId: c.id,
       clientName: c.name,
       title: "",
       description: "",
-      image: "",
+      images: [],
       year: String(new Date().getFullYear()),
     });
     setProjectOpen(true);
@@ -215,13 +220,14 @@ export function AdminClients() {
     projLastGenKey.current = p.title;
     projVariationRef.current = 1;
     setProjSeoInfo(null);
+    setProjImgUrlInput("");
     setProjectEdit({
       id: p.id,
       clientId: c.id,
       clientName: c.name,
       title: p.title,
       description: p.description,
-      image: p.image,
+      images: [...p.images],
       year: p.year ? String(p.year) : "",
     });
     setProjectOpen(true);
@@ -256,7 +262,7 @@ export function AdminClients() {
     if (!projectEdit) return;
     if (!projectEdit.title.trim()) return toast.error("Project title is required");
     if (!projectEdit.description.trim()) return toast.error("Project description is required");
-    if (!projectEdit.image.trim()) return toast.error("Upload or paste a project image");
+    if (projectEdit.images.length === 0) return toast.error("Upload at least one project image");
     setSaving(true);
     try {
       await adminSaveClientProject({
@@ -264,7 +270,7 @@ export function AdminClients() {
         clientId: projectEdit.clientId,
         title: projectEdit.title.trim(),
         description: projectEdit.description.trim(),
-        image: projectEdit.image.trim(),
+        images: projectEdit.images,
         year: projectEdit.year ? Number(projectEdit.year) : null,
       });
       toast.success(projectEdit.id ? "Project updated" : "Project added");
@@ -277,12 +283,13 @@ export function AdminClients() {
     }
   };
 
-  const handleProjectImgUpload = async (file: File) => {
+  const handleProjectImgUpload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingProjImg(true);
     try {
-      const { url } = await uploadImage(file);
-      setProjectEdit((s) => (s ? { ...s, image: url } : s));
-      toast.success("Image uploaded");
+      const { urls } = await uploadImages(files);
+      setProjectEdit((s) => (s ? { ...s, images: [...s.images, ...urls] } : s));
+      toast.success(files.length === 1 ? "Image uploaded" : `${files.length} images uploaded`);
     } catch (e) {
       toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
     } finally {
@@ -363,7 +370,15 @@ export function AdminClients() {
                       key={p.id}
                       className="group flex items-center gap-3 rounded-lg border bg-zinc-50/60 p-2"
                     >
-                      <img src={p.image} alt={p.title} className="h-11 w-14 shrink-0 rounded-md border object-cover" />
+                      <span className="relative shrink-0">
+                        <img src={p.images[0]} alt={p.title} className="h-11 w-14 rounded-md border object-cover" />
+                        {p.images.length > 1 && (
+                          <span className="absolute -right-1.5 -top-1.5 flex items-center gap-0.5 rounded-full bg-zinc-900 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
+                            <Images className="h-2.5 w-2.5" aria-hidden="true" />
+                            {p.images.length}
+                          </span>
+                        )}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-zinc-800">{p.title}</p>
                         <p className="text-xs text-zinc-400">{p.year ?? "—"}</p>
@@ -494,37 +509,81 @@ export function AdminClients() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                {/* image preview + upload */}
+                {/* images — multiple, first is the main one */}
                 <div className="space-y-2">
-                  <Label>Project Image *</Label>
-                  <div className="flex items-center gap-4">
-                    <span className="flex h-24 w-36 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-zinc-50">
-                      {projectEdit.image ? (
-                        <img src={projectEdit.image} alt="Project image preview" className="h-full w-full object-cover" />
+                  <Label>Project Images * (first image is the main one)</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {projectEdit.images.map((img, i) => (
+                      <div key={`${img}-${i}`} className="group relative h-20 w-28 overflow-hidden rounded-lg border">
+                        <img src={img} alt={`Project image ${i + 1}`} className="h-full w-full object-cover" />
+                        <button
+                          onClick={() =>
+                            setProjectEdit((s) => (s ? { ...s, images: s.images.filter((_, j) => j !== i) } : s))
+                          }
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          aria-label={`Remove image ${i + 1}`}
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                        {i === 0 && (
+                          <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                            MAIN
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    <label className="flex h-20 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-zinc-400 hover:border-primary/50 hover:text-primary">
+                      {uploadingProjImg ? (
+                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                       ) : (
-                        <span className="text-[10px] font-semibold text-zinc-300">IMAGE</span>
+                        <Upload className="h-5 w-5" aria-hidden="true" />
                       )}
-                    </span>
-                    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 text-sm font-semibold text-zinc-500 hover:border-primary/50 hover:text-primary">
-                      {uploadingProjImg ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Upload className="h-4 w-4" aria-hidden="true" />}
-                      Upload image
+                      <span className="text-[10px] font-semibold">
+                        {uploadingProjImg ? "Uploading…" : "Upload"}
+                      </span>
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
+                        multiple
                         className="hidden"
                         onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleProjectImgUpload(f);
+                          const files = Array.from(e.target.files ?? []);
+                          if (files.length > 0) void handleProjectImgUpload(files);
                           e.currentTarget.value = "";
                         }}
                       />
                     </label>
                   </div>
-                  <Input
-                    value={projectEdit.image}
-                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, image: e.target.value } : s))}
-                    placeholder="/images/proj-cafe.png"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={projImgUrlInput}
+                      onChange={(e) => setProjImgUrlInput(e.target.value)}
+                      placeholder="…or paste image URL (e.g. /images/proj-cafe.png)"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && projImgUrlInput.trim()) {
+                          e.preventDefault();
+                          setProjectEdit((s) => (s ? { ...s, images: [...s.images, projImgUrlInput.trim()] } : s));
+                          setProjImgUrlInput("");
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!projImgUrlInput.trim()) return;
+                        setProjectEdit((s) => (s ? { ...s, images: [...s.images, projImgUrlInput.trim()] } : s));
+                        setProjImgUrlInput("");
+                      }}
+                    >
+                      Add URL
+                    </Button>
+                  </div>
+                  {projectEdit.images.length > 1 && (
+                    <p className="text-xs text-zinc-400">
+                      {projectEdit.images.length} images — visitors can browse them as a gallery on the case study page.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Project Title *</Label>

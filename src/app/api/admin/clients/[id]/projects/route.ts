@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { serializeImages } from "@/lib/images";
 
 /** POST /api/admin/clients/[id]/projects — add a project to a client */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,10 +16,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const b = await req.json().catch(() => ({}));
     const title = String(b.title ?? "").trim();
     const description = String(b.description ?? "").trim();
-    const image = String(b.image ?? "").trim();
+    const images = serializeImages(b.images);
     if (!title) return NextResponse.json({ error: "Project title is required" }, { status: 400 });
     if (!description) return NextResponse.json({ error: "Project description is required" }, { status: 400 });
-    if (!image) return NextResponse.json({ error: "A project image is required" }, { status: 400 });
+    if (images === "[]") return NextResponse.json({ error: "At least one project image is required" }, { status: 400 });
 
     const yearNum = Number(b.year);
     const sortOrder = Number.isFinite(Number(b.sortOrder))
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         title,
         description,
-        image,
+        images,
         year: Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2200 ? Math.round(yearNum) : null,
         sortOrder,
         clientId: id,

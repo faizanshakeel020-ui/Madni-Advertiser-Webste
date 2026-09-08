@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { parseImages } from "@/lib/images";
 
 /** GET /api/clients — clients (with their projects) for the homepage Our Clients section */
 export async function GET() {
@@ -22,7 +23,7 @@ export async function GET() {
           id: p.id,
           title: p.title,
           description: p.description,
-          image: p.image,
+          images: parseImages(p.images),
           year: p.year,
           sortOrder: p.sortOrder,
         })),

@@ -55,7 +55,7 @@ import {
   adminGenerateDescription,
   adminSaveProduct,
   fetchCategories,
-  uploadImage,
+  uploadImages,
   type GenerateDescriptionResponse,
 } from "@/lib/api";
 import { formatPKR, slugify } from "@/lib/format";
@@ -379,12 +379,13 @@ export function AdminProducts() {
     }
   };
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingImg(true);
     try {
-      const { url } = await uploadImage(file);
-      setEditing((e) => (e ? { ...e, images: [...e.images, url] } : e));
-      toast.success("Image uploaded");
+      const { urls } = await uploadImages(files);
+      setEditing((e) => (e ? { ...e, images: [...e.images, ...urls] } : e));
+      toast.success(files.length === 1 ? "Image uploaded" : `${files.length} images uploaded`);
     } catch (e) {
       toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
     } finally {
@@ -695,10 +696,11 @@ export function AdminProducts() {
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
+                        multiple
                         className="hidden"
                         onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleUpload(f);
+                          const files = Array.from(e.target.files ?? []);
+                          if (files.length > 0) void handleUpload(files);
                           e.target.value = "";
                         }}
                       />

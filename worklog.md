@@ -422,3 +422,32 @@ Stage Summary:
 - Pointer cursor now site-wide on all clickable buttons (globals.css base rule)
 - Mobile navbar: Services/Shop/Portfolio merged into single accordion options (duplicates removed)
 - Admin Clients/Projects CRUD confirmed fully functional (add/edit/delete clients and their projects with logo + image uploads)
+
+---
+Task ID: 23-fix-uploads-multi-images
+Agent: Z.ai Code (main agent)
+Task: Fix broken image uploads in admin (Products / Clients / Client Projects) and add multiple-pictures support for these sections; also finish the pending mobile-navbar merge (Services/Shop/Portfolio → one dropdown)
+
+Work Log:
+- Root cause: src/app/api/upload/route.ts was MISSING (lost in an earlier refactor) — every upload (products, client logos, project images, quote reference images) 404'd. Recreated the route: multipart POST accepting `file` (single) and `files` (batch, max 10), validates png/jpg/jpeg/webp + 5MB limit, saves to db/uploads with unique names, returns { url, urls }
+- lib/api.ts: added uploadImages(files[]) batch helper; uploadImage now returns { url, urls }; AdminClientProjectPayload.image → images: string[]
+- Prisma: ClientProject.image (single) → images String @default("[]") (JSON array). Migration: added column via db:push → temp script copied image into [image] for all 16 projects → dropped legacy column via db:push. Restarted dev server to reload Prisma Client
+- New shared helpers src/lib/images.ts (parseImages / serializeImages, defensive JSON handling)
+- Updated APIs to serve/accept images arrays: /api/clients (public), /api/admin/clients (GET), /api/admin/clients/[id]/projects (POST), /api/admin/projects/[id] (PUT)
+- types.ts: ClientProject.images: string[] (first = main)
+- admin-clients.tsx project dialog: multi-image editor — thumbnail grid with MAIN badge + per-image remove (X), multi-select Upload tile (multiple attr), paste-URL row with Add URL; project card list shows first image + image-count badge; logo dialog upload unchanged (single, now works)
+- admin-products.tsx: Upload tile now multiple-select; handleUpload(files[]) appends all uploaded URLs
+- case-study-view.tsx: new ProjectGallery component per project — main image, bottom thumbnail strip (click to switch, active = gold border), prev/next arrows, n/n counter; JSON-LD + hero background use images[0]
+- globals.css: added .scrollbar-none utility for the gallery strip
+- Mobile navbar (pending Task 22 item): merged Services/Shop/Portfolio accordions into ONE "Explore" accordion (Compass icon) with gold group labels + dividers; content preserved (services w/ thumbs + subs, shop cats + subs, portfolio + client case studies)
+- Note: Our Clients single-row auto-scroll (3.2s interval, hover/drag pause), manual arrows, cursor-pointer, and "Read More" label were already live from the prior session — verified in browser (transform moved 0 → -655px, cursor=pointer, Read More present)
+- E2E (agent-browser): admin login → Clients → edit project: 3 thumbs rendered; real file upload via dialog input added a 4th thumb; Save persisted to DB; products dialog multi-upload (2 files at once) added 2 thumbs; client logo upload auto-filled URL field; case study page: 4 thumbs + counter "1/4", thumb click switched main image (3/4), arrows next/prev verified; mobile 390px gallery + VLM layout checks OK; mobile menu shows single "Explore" accordion (expanded: Services/Shop/Portfolio/Client Case Studies labels, 75 nav buttons, VLM clean); navigation from panel → /services/digital works; clean reloads of home/case-study/admin = 0 console errors; no broken imgs (36 loaded)
+- Restored demo gallery to 3 coherent images (proj-cafe/restaurant/retail) after testing; temp files/scripts removed
+- bun run lint: 0 errors; dev.log clean (all 200s)
+
+Stage Summary:
+- Image upload FIXED everywhere (missing /api/upload route recreated) — products, client logos, client project images, and quote reference images all work again
+- Multi-picture support: ClientProject.images JSON array (schema + data migrated 16/16); products already array-based — both dialogs now multi-select upload with thumbnail management
+- Public case study pages render a browsable image gallery (thumbs + arrows + counter) per project
+- Mobile navbar: Services/Shop/Portfolio merged into a single "Explore" dropdown panel
+- Verified end-to-end in browser incl. real file uploads; lint 0 errors

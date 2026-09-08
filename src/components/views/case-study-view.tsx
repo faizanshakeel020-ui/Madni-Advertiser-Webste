@@ -7,7 +7,7 @@
  * Also sets per-page <title>, meta description and JSON-LD structured data.
  */
 import { useEffect, useState } from "react";
-import { ArrowLeft, Briefcase, Loader2 } from "lucide-react";
+import { ArrowLeft, Briefcase, ChevronLeft, ChevronRight, Images, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +58,85 @@ function splitParagraphs(text: string): string[] {
 
 function countWords(s: string): number {
   return s.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Image gallery for one project: main image + thumbnail strip + prev/next
+ * arrows (only rendered when the project has more than one image).
+ */
+function ProjectGallery({
+  images,
+  title,
+  clientName,
+  eager,
+  year,
+}: {
+  images: string[];
+  title: string;
+  clientName: string;
+  eager: boolean;
+  year: number | null;
+}) {
+  const [idx, setIdx] = useState(0);
+  const safeIdx = Math.min(idx, images.length - 1);
+  const main = images[safeIdx] ?? "/images/proj-building.png";
+  const multi = images.length > 1;
+
+  return (
+    <>
+      <img
+        src={main}
+        alt={`${title} — ${clientName}`}
+        loading={eager ? "eager" : "lazy"}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {year && (
+        <Badge className="absolute left-3 top-3 bg-zinc-950/85 text-white hover:bg-zinc-950/85">
+          {year}
+        </Badge>
+      )}
+      {multi && (
+        <>
+          {/* counter + arrows */}
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-zinc-950/85 px-2.5 py-1 text-[11px] font-bold text-white">
+            <Images className="h-3 w-3" aria-hidden="true" />
+            {safeIdx + 1}/{images.length}
+          </span>
+          <div className="absolute bottom-14 right-3 flex gap-1.5 sm:bottom-16">
+            <button
+              onClick={() => setIdx((safeIdx - 1 + images.length) % images.length)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950/70 text-white transition-colors hover:bg-primary"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setIdx((safeIdx + 1) % images.length)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950/70 text-white transition-colors hover:bg-primary"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+          {/* thumbnail strip */}
+          <div className="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto bg-gradient-to-t from-zinc-950/85 to-transparent p-2 scrollbar-none">
+            {images.map((img, j) => (
+              <button
+                key={`${img}-${j}`}
+                onClick={() => setIdx(j)}
+                aria-label={`Show image ${j + 1}`}
+                className={`h-9 w-14 shrink-0 overflow-hidden rounded-md border-2 transition-all ${
+                  j === safeIdx ? "border-primary opacity-100" : "border-white/40 opacity-70 hover:opacity-100"
+                }`}
+              >
+                <img src={img} alt={`${title} thumbnail ${j + 1}`} loading="lazy" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
 }
 
 export function CaseStudyView({ slug }: { slug: string }) {
@@ -111,7 +190,7 @@ export function CaseStudyView({ slug }: { slug: string }) {
           "@type": "CreativeWork",
           name: p.title,
           description: snippet(p.description),
-          image: p.image,
+          image: p.images[0],
           dateCreated: p.year ? String(p.year) : undefined,
           creator: { "@type": "Organization", name: SITE.name, address: SITE.address },
         },
@@ -159,7 +238,7 @@ export function CaseStudyView({ slug }: { slug: string }) {
         <div
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: `url(${client.projects[0]?.image ?? "/images/proj-building.png"})`,
+            backgroundImage: `url(${client.projects[0]?.images[0] ?? "/images/proj-building.png"})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -218,17 +297,13 @@ export function CaseStudyView({ slug }: { slug: string }) {
                       i % 2 === 1 ? "sm:order-2" : "sm:order-1"
                     }`}
                   >
-                    <img
-                      src={p.image}
-                      alt={`${p.title} — ${client.name}`}
-                      loading={i === 0 ? "eager" : "lazy"}
-                      className="absolute inset-0 h-full w-full object-cover"
+                    <ProjectGallery
+                      images={p.images}
+                      title={p.title}
+                      clientName={client.name}
+                      eager={i === 0}
+                      year={p.year}
                     />
-                    {p.year && (
-                      <Badge className="absolute left-3 top-3 bg-zinc-950/85 text-white hover:bg-zinc-950/85">
-                        {p.year}
-                      </Badge>
-                    )}
                   </div>
 
                   {/* long description */}

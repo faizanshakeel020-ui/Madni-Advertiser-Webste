@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { serializeImages } from "@/lib/images";
 
 /** PUT /api/admin/projects/[id] — update a client project */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,8 +18,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (title === "") return NextResponse.json({ error: "Project title is required" }, { status: 400 });
     const description = b.description !== undefined ? String(b.description).trim() : undefined;
     if (description === "") return NextResponse.json({ error: "Project description is required" }, { status: 400 });
-    const image = b.image !== undefined ? String(b.image).trim() : undefined;
-    if (image === "") return NextResponse.json({ error: "A project image is required" }, { status: 400 });
+    const images = b.images !== undefined ? serializeImages(b.images) : undefined;
+    if (images === "[]") return NextResponse.json({ error: "At least one project image is required" }, { status: 400 });
 
     const yearNum = Number(b.year);
     const project = await db.clientProject.update({
@@ -26,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       data: {
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
-        ...(image !== undefined && { image }),
+        ...(images !== undefined && { images }),
         ...(b.year !== undefined && {
           year: Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2200 ? Math.round(yearNum) : null,
         }),

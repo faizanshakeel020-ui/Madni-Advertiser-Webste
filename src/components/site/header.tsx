@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronDown, ChevronRight, Compass, Menu, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -169,12 +169,20 @@ export function Header() {
                     ))}
                   </nav>
 
+                  {/* one merged dropdown: Services + Shop + Portfolio */}
                   <Accordion type="single" collapsible>
-                    <AccordionItem value="services" className="border-y">
+                    <AccordionItem value="explore" className="border-y">
                       <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
-                        Services
+                        <span className="flex items-center gap-2">
+                          <Compass className="h-4 w-4 text-primary" aria-hidden="true" />
+                          Explore
+                        </span>
                       </AccordionTrigger>
-                      <AccordionContent className="pb-2">
+                      <AccordionContent className="pb-3">
+                        {/* ---- Services group ---- */}
+                        <p className="px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+                          Services
+                        </p>
                         {SERVICES.map((s) => (
                           <div key={s.slug} className="mb-1">
                             <button
@@ -219,13 +227,11 @@ export function Header() {
                         >
                           View All Services →
                         </button>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="shop" className="border-b">
-                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
-                        Shop Categories
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-2">
+
+                        {/* ---- Shop group ---- */}
+                        <p className="mt-4 border-t border-zinc-100 px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+                          Shop Categories
+                        </p>
                         {cats.map((c) => (
                           <div key={c.slug} className="mb-1">
                             <button
@@ -266,13 +272,11 @@ export function Header() {
                         >
                           Browse Full Shop →
                         </button>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="portfolio" className="border-b">
-                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
-                        Portfolio
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-2">
+
+                        {/* ---- Portfolio group ---- */}
+                        <p className="mt-4 border-t border-zinc-100 px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+                          Portfolio
+                        </p>
                         <button
                           onClick={() => navigate("/portfolio")}
                           className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"

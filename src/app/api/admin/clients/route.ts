@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
 import { slugify } from "@/lib/format";
+import { parseImages } from "@/lib/images";
 
 /** Find a unique slug for a client ("cafe-mocha", "cafe-mocha-2", ...). */
 async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
@@ -41,7 +42,7 @@ export async function GET() {
           id: p.id,
           title: p.title,
           description: p.description,
-          image: p.image,
+          images: parseImages(p.images),
           year: p.year,
           sortOrder: p.sortOrder,
         })),

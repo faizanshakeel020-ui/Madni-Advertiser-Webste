@@ -122,9 +122,16 @@ export async function createQuote(
 
 // ---------- Uploads ----------
 
-export async function uploadImage(file: File): Promise<{ url: string }> {
+export async function uploadImage(file: File): Promise<{ url: string; urls: string[] }> {
   const form = new FormData();
   form.append("file", file);
+  return jsonFetch("/api/upload", { method: "POST", body: form });
+}
+
+/** Upload several images at once — returns the stored URLs in order. */
+export async function uploadImages(files: File[]): Promise<{ url: string; urls: string[] }> {
+  const form = new FormData();
+  for (const f of files) form.append("files", f);
   return jsonFetch("/api/upload", { method: "POST", body: form });
 }
 
@@ -207,7 +214,7 @@ export type AdminClientProjectPayload = {
   clientId: string;
   title: string;
   description: string;
-  image: string;
+  images: string[];
   year?: number | null;
 };
 

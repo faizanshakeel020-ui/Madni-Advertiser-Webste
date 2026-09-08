@@ -157,6 +157,15 @@
   background: oklch(0.55 0 0 / 0.55);
 }
 
+/* Hidden scrollbar (gallery strips) */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hero image zoom on hover for cards */
 .img-zoom {
   transition: transform 0.5s cubic-bezier(0.2, 0.6, 0.2, 1);

@@ -1,0 +1,678 @@
+     1→"use client";
+     2→
+     3→/**
+     4→ * Admin — Clients management for the homepage "Our Clients" section.
+     5→ * Add/edit/delete clients (round logo) and their projects (shown on logo click).
+     6→ */
+     7→import { useEffect, useRef, useState } from "react";
+     8→import {
+     9→  Briefcase,
+    10→  Loader2,
+    11→  Pencil,
+    12→  Plus,
+    13→  Sparkles,
+    14→  Trash2,
+    15→  Upload,
+    16→  Wand2,
+    17→} from "lucide-react";
+    18→import { toast } from "sonner";
+    19→import { Button } from "@/components/ui/button";
+    20→import { Input } from "@/components/ui/input";
+    21→import { Label } from "@/components/ui/label";
+    22→import { Textarea } from "@/components/ui/textarea";
+    23→import { Badge } from "@/components/ui/badge";
+    24→import { Skeleton } from "@/components/ui/skeleton";
+    25→import {
+    26→  Dialog,
+    27→  DialogContent,
+    28→  DialogDescription,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→} from "@/components/ui/dialog";
+    32→import {
+    33→  AlertDialog,
+    34→  AlertDialogAction,
+    35→  AlertDialogCancel,
+    36→  AlertDialogContent,
+    37→  AlertDialogDescription,
+    38→  AlertDialogFooter,
+    39→  AlertDialogHeader,
+    40→  AlertDialogTitle,
+    41→} from "@/components/ui/alert-dialog";
+    42→import {
+    43→  adminDeleteClient,
+    44→  adminDeleteClientProject,
+    45→  adminFetchClients,
+    46→  adminGenerateProjectDescription,
+    47→  adminSaveClient,
+    48→  adminSaveClientProject,
+    49→  uploadImage,
+    50→} from "@/lib/api";
+    51→import type { GenerateDescriptionResponse } from "@/lib/api";
+    52→import { slugify } from "@/lib/format";
+    53→import type { Client, ClientProject } from "@/lib/types";
+    54→
+    55→type ClientEdit = {
+    56→  id?: string;
+    57→  name: string;
+    58→  slug: string;
+    59→  logo: string;
+    60→  industry: string;
+    61→};
+    62→
+    63→type ProjectEdit = {
+    64→  id?: string;
+    65→  clientId: string;
+    66→  clientName: string;
+    67→  title: string;
+    68→  description: string;
+    69→  image: string;
+    70→  year: string;
+    71→};
+    72→
+    73→const emptyClient: ClientEdit = { name: "", slug: "", logo: "", industry: "" };
+    74→
+    75→export function AdminClients() {
+    76→  const [clients, setClients] = useState<Client[]>([]);
+    77→  const [loading, setLoading] = useState(true);
+    78→  const [saving, setSaving] = useState(false);
+    79→
+    80→  // client dialog
+    81→  const [clientOpen, setClientOpen] = useState(false);
+    82→  const [clientEdit, setClientEdit] = useState<ClientEdit | null>(null);
+    83→  const [uploadingLogo, setUploadingLogo] = useState(false);
+    84→  const [deleteClient, setDeleteClient] = useState<Client | null>(null);
+    85→
+    86→  // project dialog
+    87→  const [projectOpen, setProjectOpen] = useState(false);
+    88→  const [projectEdit, setProjectEdit] = useState<ProjectEdit | null>(null);
+    89→  const [uploadingProjImg, setUploadingProjImg] = useState(false);
+    90→  const [deleteProject, setDeleteProject] = useState<ClientProject | null>(null);
+    91→
+    92→  // project description AI writer
+    93→  const [generatingDesc, setGeneratingDesc] = useState(false);
+    94→  const [projSeoInfo, setProjSeoInfo] = useState<GenerateDescriptionResponse | null>(null);
+    95→  const projDescTouched = useRef(false);
+    96→  const projLastGenKey = useRef("");
+    97→  const projVariationRef = useRef(1);
+    98→
+    99→  const load = async () => {
+   100→    setLoading(true);
+   101→    try {
+   102→      setClients(await adminFetchClients());
+   103→    } catch {
+   104→      toast.error("Failed to load clients");
+   105→    } finally {
+   106→      setLoading(false);
+   107→    }
+   108→  };
+   109→
+   110→  useEffect(() => {
+   111→    load();
+   112→  }, []);
+   113→
+   114→  // ---------- client CRUD ----------
+   115→
+   116→  const openNewClient = () => {
+   117→    setClientEdit({ ...emptyClient });
+   118→    setClientOpen(true);
+   119→  };
+   120→
+   121→  const openEditClient = (c: Client) => {
+   122→    setClientEdit({ id: c.id, name: c.name, slug: c.slug, logo: c.logo, industry: c.industry ?? "" });
+   123→    setClientOpen(true);
+   124→  };
+   125→
+   126→  const saveClient = async () => {
+   127→    if (!clientEdit) return;
+   128→    if (!clientEdit.name.trim()) return toast.error("Client name is required");
+   129→    if (!clientEdit.logo.trim()) return toast.error("Upload or paste a client logo image");
+   130→    setSaving(true);
+   131→    try {
+   132→      await adminSaveClient({
+   133→        id: clientEdit.id,
+   134→        name: clientEdit.name.trim(),
+   135→        slug: clientEdit.slug.trim(),
+   136→        logo: clientEdit.logo.trim(),
+   137→        industry: clientEdit.industry.trim() || null,
+   138→      });
+   139→      toast.success(clientEdit.id ? "Client updated" : "Client added");
+   140→      setClientOpen(false);
+   141→      await load();
+   142→    } catch (e) {
+   143→      toast.error("Save failed", { description: e instanceof Error ? e.message : "" });
+   144→    } finally {
+   145→      setSaving(false);
+   146→    }
+   147→  };
+   148→
+   149→  const handleLogoUpload = async (file: File) => {
+   150→    setUploadingLogo(true);
+   151→    try {
+   152→      const { url } = await uploadImage(file);
+   153→      setClientEdit((s) => (s ? { ...s, logo: url } : s));
+   154→      toast.success("Logo uploaded");
+   155→    } catch (e) {
+   156→      toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
+   157→    } finally {
+   158→      setUploadingLogo(false);
+   159→    }
+   160→  };
+   161→
+   162→  // ---------- project CRUD ----------
+   163→
+   164→  /** AI-write a long SEO case-study description and fill the textarea. */
+   165→  const runGenerateProjDesc = async (src: ProjectEdit, variation: number) => {
+   166→    setGeneratingDesc(true);
+   167→    try {
+   168→      // short existing text = the admin's notes → use as hints for the writer
+   169→      const notes = src.description.trim();
+   170→      const hints = notes.length > 0 && notes.length < 120 ? notes : undefined;
+   171→      const res = await adminGenerateProjectDescription({
+   172→        clientId: src.clientId,
+   173→        clientName: src.clientName,
+   174→        title: src.title.trim(),
+   175→        year: src.year ? Number(src.year) : null,
+   176→        hints,
+   177→        variation,
+   178→      });
+   179→      setProjectEdit((s) => (s ? { ...s, description: res.description } : s));
+   180→      setProjSeoInfo(res);
+   181→      if (res.method === "ai") {
+   182→        toast.success("AI wrote a long SEO case study", {
+   183→          description: `${res.wordCount} words · ${res.keywords.length} ranking keywords built in. Edit freely.`,
+   184→        });
+   185→      } else {
+   186→        toast.info("Description generated", {
+   187→          description: "AI was busy — an SEO template was used. Try Regenerate for a fresh AI draft.",
+   188→        });
+   189→      }
+   190→    } catch {
+   191→      toast.error("AI description failed", { description: "Write it manually or try again." });
+   192→    } finally {
+   193→      setGeneratingDesc(false);
+   194→    }
+   195→  };
+   196→
+   197→  const openNewProject = (c: Client) => {
+   198→    projDescTouched.current = false;
+   199→    projLastGenKey.current = "";
+   200→    projVariationRef.current = 1;
+   201→    setProjSeoInfo(null);
+   202→    setProjectEdit({
+   203→      clientId: c.id,
+   204→      clientName: c.name,
+   205→      title: "",
+   206→      description: "",
+   207→      image: "",
+   208→      year: String(new Date().getFullYear()),
+   209→    });
+   210→    setProjectOpen(true);
+   211→  };
+   212→
+   213→  const openEditProject = (c: Client, p: ClientProject) => {
+   214→    projDescTouched.current = true; // never auto-overwrite an existing story
+   215→    projLastGenKey.current = p.title;
+   216→    projVariationRef.current = 1;
+   217→    setProjSeoInfo(null);
+   218→    setProjectEdit({
+   219→      id: p.id,
+   220→      clientId: c.id,
+   221→      clientName: c.name,
+   222→      title: p.title,
+   223→      description: p.description,
+   224→      image: p.image,
+   225→      year: p.year ? String(p.year) : "",
+   226→    });
+   227→    setProjectOpen(true);
+   228→  };
+   229→
+   230→  const generateProjDescNow = () => {
+   231→    if (!projectEdit || !projectEdit.title.trim()) {
+   232→      return toast.error("Type a project title first");
+   233→    }
+   234→    projVariationRef.current += 1;
+   235→    projDescTouched.current = false; // fresh AI text may replace what's there
+   236→    projLastGenKey.current = projectEdit.title.trim();
+   237→    setProjSeoInfo(null);
+   238→    void runGenerateProjDesc(projectEdit, projVariationRef.current);
+   239→  };
+   240→
+   241→  // Auto-write the long description for a NEW project once the title settles
+   242→  // (debounced 2.5s, only while empty, never after manual typing or a failed attempt)
+   243→  useEffect(() => {
+   244→    if (!projectEdit || projectEdit.id || projDescTouched.current || generatingDesc) return;
+   245→    const title = projectEdit.title.trim();
+   246→    if (title.length < 6 || projectEdit.description.trim()) return;
+   247→    if (title === projLastGenKey.current) return;
+   248→    const t = setTimeout(() => {
+   249→      projLastGenKey.current = title;
+   250→      void runGenerateProjDesc(projectEdit, 1);
+   251→    }, 2500);
+   252→    return () => clearTimeout(t);
+   253→  }, [projectEdit, generatingDesc]);
+   254→
+   255→  const saveProject = async () => {
+   256→    if (!projectEdit) return;
+   257→    if (!projectEdit.title.trim()) return toast.error("Project title is required");
+   258→    if (!projectEdit.description.trim()) return toast.error("Project description is required");
+   259→    if (!projectEdit.image.trim()) return toast.error("Upload or paste a project image");
+   260→    setSaving(true);
+   261→    try {
+   262→      await adminSaveClientProject({
+   263→        id: projectEdit.id,
+   264→        clientId: projectEdit.clientId,
+   265→        title: projectEdit.title.trim(),
+   266→        description: projectEdit.description.trim(),
+   267→        image: projectEdit.image.trim(),
+   268→        year: projectEdit.year ? Number(projectEdit.year) : null,
+   269→      });
+   270→      toast.success(projectEdit.id ? "Project updated" : "Project added");
+   271→      setProjectOpen(false);
+   272→      await load();
+   273→    } catch (e) {
+   274→      toast.error("Save failed", { description: e instanceof Error ? e.message : "" });
+   275→    } finally {
+   276→      setSaving(false);
+   277→    }
+   278→  };
+   279→
+   280→  const handleProjectImgUpload = async (file: File) => {
+   281→    setUploadingProjImg(true);
+   282→    try {
+   283→      const { url } = await uploadImage(file);
+   284→      setProjectEdit((s) => (s ? { ...s, image: url } : s));
+   285→      toast.success("Image uploaded");
+   286→    } catch (e) {
+   287→      toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
+   288→    } finally {
+   289→      setUploadingProjImg(false);
+   290→    }
+   291→  };
+   292→
+   293→  return (
+   294→    <div className="space-y-5">
+   295→      <div className="flex flex-wrap items-center justify-between gap-3">
+   296→        <div>
+   297→          <h1 className="font-display text-2xl font-bold text-zinc-900">Clients</h1>
+   298→          <p className="mt-1 text-sm text-zinc-500">
+   299→            Shown on the homepage — click a logo on the site to view that client&apos;s projects.
+   300→          </p>
+   301→        </div>
+   302→        <Button className="font-bold" onClick={openNewClient}>
+   303→          <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" /> Add Client
+   304→        </Button>
+   305→      </div>
+   306→
+   307→      {/* Client cards */}
+   308→      {loading ? (
+   309→        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+   310→          {Array.from({ length: 6 }).map((_, i) => (
+   311→            <Skeleton key={i} className="h-56 rounded-2xl" />
+   312→          ))}
+   313→        </div>
+   314→      ) : clients.length === 0 ? (
+   315→        <div className="rounded-2xl border bg-white p-12 text-center text-sm text-zinc-400 shadow-sm">
+   316→          No clients yet — add your first client to show their logo on the homepage.
+   317→        </div>
+   318→      ) : (
+   319→        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+   320→          {clients.map((c) => (
+   321→            <section key={c.id} className="rounded-2xl border bg-white shadow-sm">
+   322→              {/* header: round logo + name */}
+   323→              <div className="flex items-center gap-3 border-b p-4">
+   324→                <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-200 bg-white">
+   325→                  <img src={c.logo} alt={`${c.name} logo`} className="h-full w-full object-cover" />
+   326→                </span>
+   327→                <div className="min-w-0 flex-1">
+   328→                  <p className="truncate font-display text-base font-bold text-zinc-900">{c.name}</p>
+   329→                  <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+   330→                    {c.industry || "—"}
+   331→                  </p>
+   332→                </div>
+   333→                <div className="flex shrink-0 gap-1.5">
+   334→                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditClient(c)} aria-label={`Edit ${c.name}`}>
+   335→                    <Pencil className="h-4 w-4" aria-hidden="true" />
+   336→                  </Button>
+   337→                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => setDeleteClient(c)} aria-label={`Delete ${c.name}`}>
+   338→                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+   339→                  </Button>
+   340→                </div>
+   341→              </div>
+   342→
+   343→              {/* projects list */}
+   344→              <div className="p-4">
+   345→                <div className="flex items-center justify-between">
+   346→                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+   347→                    <Briefcase className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+   348→                    Projects ({c.projects.length})
+   349→                  </p>
+   350→                  <button
+   351→                    onClick={() => openNewProject(c)}
+   352→                    className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent"
+   353→                  >
+   354→                    <Plus className="h-3 w-3" aria-hidden="true" /> Add Project
+   355→                  </button>
+   356→                </div>
+   357→                <ul className="mt-3 max-h-44 space-y-2 overflow-y-auto scrollbar-thin">
+   358→                  {c.projects.length === 0 && (
+   359→                    <li className="py-3 text-center text-xs text-zinc-400">No projects yet.</li>
+   360→                  )}
+   361→                  {c.projects.map((p) => (
+   362→                    <li
+   363→                      key={p.id}
+   364→                      className="group flex items-center gap-3 rounded-lg border bg-zinc-50/60 p-2"
+   365→                    >
+   366→                      <img src={p.image} alt={p.title} className="h-11 w-14 shrink-0 rounded-md border object-cover" />
+   367→                      <div className="min-w-0 flex-1">
+   368→                        <p className="truncate text-sm font-semibold text-zinc-800">{p.title}</p>
+   369→                        <p className="text-xs text-zinc-400">{p.year ?? "—"}</p>
+   370→                      </div>
+   371→                      <div className="flex shrink-0 gap-1">
+   372→                        <button
+   373→                          onClick={() => openEditProject(c, p)}
+   374→                          className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-white hover:text-primary"
+   375→                          aria-label={`Edit ${p.title}`}
+   376→                        >
+   377→                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+   378→                        </button>
+   379→                        <button
+   380→                          onClick={() => setDeleteProject(p)}
+   381→                          className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-600"
+   382→                          aria-label={`Delete ${p.title}`}
+   383→                        >
+   384→                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+   385→                        </button>
+   386→                      </div>
+   387→                    </li>
+   388→                  ))}
+   389→                </ul>
+   390→              </div>
+   391→            </section>
+   392→          ))}
+   393→        </div>
+   394→      )}
+   395→
+   396→      {/* ---------- Client dialog ---------- */}
+   397→      <Dialog open={clientOpen} onOpenChange={(o) => !o && setClientOpen(false)}>
+   398→        <DialogContent className="max-w-md">
+   399→          {clientEdit && (
+   400→            <>
+   401→              <DialogHeader>
+   402→                <DialogTitle>{clientEdit.id ? "Edit Client" : "Add Client"}</DialogTitle>
+   403→                <DialogDescription>The logo appears in a round frame on the homepage.</DialogDescription>
+   404→              </DialogHeader>
+   405→              <div className="space-y-4">
+   406→                {/* logo preview + upload */}
+   407→                <div className="flex items-center gap-4">
+   408→                  <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-200 bg-white">
+   409→                    {clientEdit.logo ? (
+   410→                      <img src={clientEdit.logo} alt="Client logo preview" className="h-full w-full object-cover" />
+   411→                    ) : (
+   412→                      <span className="text-[10px] font-semibold text-zinc-300">LOGO</span>
+   413→                    )}
+   414→                  </span>
+   415→                  <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 text-sm font-semibold text-zinc-500 hover:border-primary/50 hover:text-primary">
+   416→                    {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Upload className="h-4 w-4" aria-hidden="true" />}
+   417→                    Upload logo
+   418→                    <input
+   419→                      type="file"
+   420→                      accept="image/png,image/jpeg,image/webp"
+   421→                      className="hidden"
+   422→                      onChange={(e) => {
+   423→                        const f = e.target.files?.[0];
+   424→                        if (f) void handleLogoUpload(f);
+   425→                        e.currentTarget.value = "";
+   426→                      }}
+   427→                    />
+   428→                  </label>
+   429→                </div>
+   430→                <div className="space-y-1.5">
+   431→                  <Label>Logo URL</Label>
+   432→                  <Input
+   433→                    value={clientEdit.logo}
+   434→                    onChange={(e) => setClientEdit((s) => (s ? { ...s, logo: e.target.value } : s))}
+   435→                    placeholder="/images/client-cafe-mocha.png"
+   436→                  />
+   437→                  <p className="text-xs text-zinc-400">Upload a square image — it is shown in a circle.</p>
+   438→                </div>
+   439→                <div className="space-y-1.5">
+   440→                  <Label>Client Name *</Label>
+   441→                  <Input
+   442→                    value={clientEdit.name}
+   443→                    onChange={(e) =>
+   444→                      setClientEdit((s) =>
+   445→                        s ? { ...s, name: e.target.value, ...(s.id ? {} : { slug: slugify(e.target.value) }) } : s
+   446→                      )
+   447→                    }
+   448→                    placeholder="e.g. Cafe Mocha"
+   449→                  />
+   450→                </div>
+   451→                <div className="space-y-1.5">
+   452→                  <Label>Case Study URL</Label>
+   453→                  <div className="flex items-center gap-1.5">
+   454→                    <span className="shrink-0 font-mono text-xs text-zinc-400">/casestudy/portfolio/</span>
+   455→                    <Input
+   456→                      value={clientEdit.slug}
+   457→                      onChange={(e) => setClientEdit((s) => (s ? { ...s, slug: slugify(e.target.value) } : s))}
+   458→                      placeholder="auto-from-name"
+   459→                      className="font-mono text-xs"
+   460→                    />
+   461→                  </div>
+   462→                  <p className="text-xs text-zinc-400">Where this client&apos;s logo click takes visitors. Auto-filled from the name.</p>
+   463→                </div>
+   464→                <div className="space-y-1.5">
+   465→                  <Label>Industry</Label>
+   466→                  <Input
+   467→                    value={clientEdit.industry}
+   468→                    onChange={(e) => setClientEdit((s) => (s ? { ...s, industry: e.target.value } : s))}
+   469→                    placeholder="e.g. Food & Beverage, Healthcare"
+   470→                  />
+   471→                </div>
+   472→              </div>
+   473→              <div className="mt-2 flex justify-end gap-2">
+   474→                <Button variant="outline" onClick={() => setClientOpen(false)}>Cancel</Button>
+   475→                <Button className="font-bold" onClick={saveClient} disabled={saving}>
+   476→                  {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />}
+   477→                  {clientEdit.id ? "Save Changes" : "Add Client"}
+   478→                </Button>
+   479→              </div>
+   480→            </>
+   481→          )}
+   482→        </DialogContent>
+   483→      </Dialog>
+   484→
+   485→      {/* ---------- Project dialog ---------- */}
+   486→      <Dialog open={projectOpen} onOpenChange={(o) => !o && setProjectOpen(false)}>
+   487→        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto scrollbar-thin">
+   488→          {projectEdit && (
+   489→            <>
+   490→              <DialogHeader>
+   491→                <DialogTitle>{projectEdit.id ? "Edit Project" : "Add Project"}</DialogTitle>
+   492→                <DialogDescription>
+   493→                  Shown when a visitor clicks <span className="font-semibold">{projectEdit.clientName}</span>&apos;s logo on the homepage.
+   494→                </DialogDescription>
+   495→              </DialogHeader>
+   496→              <div className="space-y-4">
+   497→                {/* image preview + upload */}
+   498→                <div className="space-y-2">
+   499→                  <Label>Project Image *</Label>
+   500→                  <div className="flex items-center gap-4">
+   501→                    <span className="flex h-24 w-36 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-zinc-50">
+   502→                      {projectEdit.image ? (
+   503→                        <img src={projectEdit.image} alt="Project image preview" className="h-full w-full object-cover" />
+   504→                      ) : (
+   505→                        <span className="text-[10px] font-semibold text-zinc-300">IMAGE</span>
+   506→                      )}
+   507→                    </span>
+   508→                    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 text-sm font-semibold text-zinc-500 hover:border-primary/50 hover:text-primary">
+   509→                      {uploadingProjImg ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Upload className="h-4 w-4" aria-hidden="true" />}
+   510→                      Upload image
+   511→                      <input
+   512→                        type="file"
+   513→                        accept="image/png,image/jpeg,image/webp"
+   514→                        className="hidden"
+   515→                        onChange={(e) => {
+   516→                          const f = e.target.files?.[0];
+   517→                          if (f) void handleProjectImgUpload(f);
+   518→                          e.currentTarget.value = "";
+   519→                        }}
+   520→                      />
+   521→                    </label>
+   522→                  </div>
+   523→                  <Input
+   524→                    value={projectEdit.image}
+   525→                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, image: e.target.value } : s))}
+   526→                    placeholder="/images/proj-cafe.png"
+   527→                  />
+   528→                </div>
+   529→                <div className="space-y-1.5">
+   530→                  <Label>Project Title *</Label>
+   531→                  <Input
+   532→                    value={projectEdit.title}
+   533→                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, title: e.target.value } : s))}
+   534→                    placeholder="e.g. Illuminated Storefront & Brand Sign"
+   535→                  />
+   536→                </div>
+   537→                <div className="space-y-1.5">
+   538→                  <div className="flex items-center justify-between">
+   539→                    <Label>Project Description *</Label>
+   540→                    <div className="flex items-center gap-2">
+   541→                      {generatingDesc && (
+   542→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   543→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Writing…
+   544→                        </span>
+   545→                      )}
+   546→                      {!generatingDesc && projSeoInfo?.method === "ai" && (
+   547→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   548→                          <Sparkles className="h-3 w-3" aria-hidden="true" /> AI-written
+   549→                        </span>
+   550→                      )}
+   551→                      <button
+   552→                        type="button"
+   553→                        onClick={generateProjDescNow}
+   554→                        disabled={generatingDesc || !projectEdit.title.trim()}
+   555→                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+   556→                      >
+   557→                        {generatingDesc ? (
+   558→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+   559→                        ) : (
+   560→                          <Wand2 className="h-3 w-3" aria-hidden="true" />
+   561→                        )}
+   562→                        {projectEdit.description.trim() ? "Regenerate" : "Write with AI"}
+   563→                      </button>
+   564→                    </div>
+   565→                  </div>
+   566→                  <Textarea
+   567→                    rows={10}
+   568→                    value={projectEdit.description}
+   569→                    onChange={(e) => {
+   570→                      projDescTouched.current = true;
+   571→                      setProjSeoInfo(null);
+   572→                      setProjectEdit((s) => (s ? { ...s, description: e.target.value } : s));
+   573→                    }}
+   574→                    placeholder="AI writes a full, SEO-optimized case study (350-450 words) from the project title — or type your own notes and hit Write with AI."
+   575→                  />
+   576→                  {projSeoInfo ? (
+   577→                    <p className="flex items-start gap-1 text-xs text-zinc-400">
+   578→                      <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+   579→                      <span>
+   580→                        SEO-ready: {projSeoInfo.wordCount} words · keywords: {projSeoInfo.keywords.slice(0, 4).join(", ")}
+   581→                        {projSeoInfo.keywords.length > 4 ? ` +${projSeoInfo.keywords.length - 4} more` : ""}
+   582→                      </span>
+   583→                    </p>
+   584→                  ) : (
+   585→                    <p className="text-xs text-zinc-400">
+   586→                      Auto-written as a long, ranking-focused case study — edit freely.
+   587→                    </p>
+   588→                  )}
+   589→                </div>
+   590→                <div className="space-y-1.5">
+   591→                  <Label>Year</Label>
+   592→                  <Input
+   593→                    type="number"
+   594→                    min={1900}
+   595→                    max={2200}
+   596→                    value={projectEdit.year}
+   597→                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, year: e.target.value } : s))}
+   598→                    placeholder={String(new Date().getFullYear())}
+   599→                  />
+   600→                </div>
+   601→              </div>
+   602→              <div className="mt-2 flex justify-end gap-2">
+   603→                <Button variant="outline" onClick={() => setProjectOpen(false)}>Cancel</Button>
+   604→                <Button className="font-bold" onClick={saveProject} disabled={saving}>
+   605→                  {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />}
+   606→                  {projectEdit.id ? "Save Changes" : "Add Project"}
+   607→                </Button>
+   608→              </div>
+   609→            </>
+   610→          )}
+   611→        </DialogContent>
+   612→      </Dialog>
+   613→
+   614→      {/* ---------- Delete confirmations ---------- */}
+   615→      <AlertDialog open={!!deleteClient} onOpenChange={(o) => !o && setDeleteClient(null)}>
+   616→        <AlertDialogContent>
+   617→          <AlertDialogHeader>
+   618→            <AlertDialogTitle>Delete {deleteClient?.name}?</AlertDialogTitle>
+   619→            <AlertDialogDescription>
+   620→              This also deletes their {deleteClient?.projects.length ?? 0} project
+   621→              {(deleteClient?.projects.length ?? 0) === 1 ? "" : "s"}. The logo disappears from the homepage immediately.
+   622→            </AlertDialogDescription>
+   623→          </AlertDialogHeader>
+   624→          <AlertDialogFooter>
+   625→            <AlertDialogCancel>Cancel</AlertDialogCancel>
+   626→            <AlertDialogAction
+   627→              className="bg-red-600 hover:bg-red-700"
+   628→              onClick={async () => {
+   629→                if (!deleteClient) return;
+   630→                try {
+   631→                  await adminDeleteClient(deleteClient.id);
+   632→                  toast.success("Client deleted");
+   633→                  setDeleteClient(null);
+   634→                  await load();
+   635→                } catch {
+   636→                  toast.error("Delete failed");
+   637→                }
+   638→              }}
+   639→            >
+   640→              Delete
+   641→            </AlertDialogAction>
+   642→          </AlertDialogFooter>
+   643→        </AlertDialogContent>
+   644→      </AlertDialog>
+   645→
+   646→      <AlertDialog open={!!deleteProject} onOpenChange={(o) => !o && setDeleteProject(null)}>
+   647→        <AlertDialogContent>
+   648→          <AlertDialogHeader>
+   649→            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+   650→            <AlertDialogDescription>
+   651→              “{deleteProject?.title}” will no longer be shown with this client&apos;s logo.
+   652→            </AlertDialogDescription>
+   653→          </AlertDialogHeader>
+   654→          <AlertDialogFooter>
+   655→            <AlertDialogCancel>Cancel</AlertDialogCancel>
+   656→            <AlertDialogAction
+   657→              className="bg-red-600 hover:bg-red-700"
+   658→              onClick={async () => {
+   659→                if (!deleteProject) return;
+   660→                try {
+   661→                  await adminDeleteClientProject(deleteProject.id);
+   662→                  toast.success("Project deleted");
+   663→                  setDeleteProject(null);
+   664→                  await load();
+   665→                } catch {
+   666→                  toast.error("Delete failed");
+   667→                }
+   668→              }}
+   669→            >
+   670→              Delete
+   671→            </AlertDialogAction>
+   672→          </AlertDialogFooter>
+   673→        </AlertDialogContent>
+   674→      </AlertDialog>
+   675→    </div>
+   676→  );
+   677→}
+   678→

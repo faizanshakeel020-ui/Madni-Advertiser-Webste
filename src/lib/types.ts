@@ -143,7 +143,7 @@ export type ClientProject = {
   id: string;
   title: string;
   description: string;
-  image: string;
+  images: string[]; // first image is the main one
   year: number | null;
   sortOrder: number;
 };
