@@ -278,6 +278,22 @@ export async function adminFetchOrders(): Promise<Order[]> {
   return jsonFetch("/api/admin/orders");
 }
 
+/** AI-write a LONG, SEO-optimized client-project case-study description. */
+export async function adminGenerateProjectDescription(data: {
+  clientId?: string | null;
+  clientName?: string;
+  title: string;
+  year?: number | null;
+  hints?: string;
+  variation?: number;
+}): Promise<GenerateDescriptionResponse> {
+  return jsonFetch("/api/admin/generate-project-description", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 export async function adminUpdateOrderStatus(
   id: string,
   status: string

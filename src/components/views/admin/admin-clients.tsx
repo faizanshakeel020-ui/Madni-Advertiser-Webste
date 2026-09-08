@@ -4,14 +4,16 @@
  * Admin — Clients management for the homepage "Our Clients" section.
  * Add/edit/delete clients (round logo) and their projects (shown on logo click).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Briefcase,
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,10 +43,12 @@ import {
   adminDeleteClient,
   adminDeleteClientProject,
   adminFetchClients,
+  adminGenerateProjectDescription,
   adminSaveClient,
   adminSaveClientProject,
   uploadImage,
 } from "@/lib/api";
+import type { GenerateDescriptionResponse } from "@/lib/api";
 import { slugify } from "@/lib/format";
 import type { Client, ClientProject } from "@/lib/types";
 
@@ -84,6 +88,13 @@ export function AdminClients() {
   const [projectEdit, setProjectEdit] = useState<ProjectEdit | null>(null);
   const [uploadingProjImg, setUploadingProjImg] = useState(false);
   const [deleteProject, setDeleteProject] = useState<ClientProject | null>(null);
+
+  // project description AI writer
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [projSeoInfo, setProjSeoInfo] = useState<GenerateDescriptionResponse | null>(null);
+  const projDescTouched = useRef(false);
+  const projLastGenKey = useRef("");
+  const projVariationRef = useRef(1);
 
   const load = async () => {
     setLoading(true);
@@ -150,7 +161,44 @@ export function AdminClients() {
 
   // ---------- project CRUD ----------
 
+  /** AI-write a long SEO case-study description and fill the textarea. */
+  const runGenerateProjDesc = async (src: ProjectEdit, variation: number) => {
+    setGeneratingDesc(true);
+    try {
+      // short existing text = the admin's notes → use as hints for the writer
+      const notes = src.description.trim();
+      const hints = notes.length > 0 && notes.length < 120 ? notes : undefined;
+      const res = await adminGenerateProjectDescription({
+        clientId: src.clientId,
+        clientName: src.clientName,
+        title: src.title.trim(),
+        year: src.year ? Number(src.year) : null,
+        hints,
+        variation,
+      });
+      setProjectEdit((s) => (s ? { ...s, description: res.description } : s));
+      setProjSeoInfo(res);
+      if (res.method === "ai") {
+        toast.success("AI wrote a long SEO case study", {
+          description: `${res.wordCount} words · ${res.keywords.length} ranking keywords built in. Edit freely.`,
+        });
+      } else {
+        toast.info("Description generated", {
+          description: "AI was busy — an SEO template was used. Try Regenerate for a fresh AI draft.",
+        });
+      }
+    } catch {
+      toast.error("AI description failed", { description: "Write it manually or try again." });
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
+
   const openNewProject = (c: Client) => {
+    projDescTouched.current = false;
+    projLastGenKey.current = "";
+    projVariationRef.current = 1;
+    setProjSeoInfo(null);
     setProjectEdit({
       clientId: c.id,
       clientName: c.name,
@@ -163,6 +211,10 @@ export function AdminClients() {
   };
 
   const openEditProject = (c: Client, p: ClientProject) => {
+    projDescTouched.current = true; // never auto-overwrite an existing story
+    projLastGenKey.current = p.title;
+    projVariationRef.current = 1;
+    setProjSeoInfo(null);
     setProjectEdit({
       id: p.id,
       clientId: c.id,
@@ -174,6 +226,31 @@ export function AdminClients() {
     });
     setProjectOpen(true);
   };
+
+  const generateProjDescNow = () => {
+    if (!projectEdit || !projectEdit.title.trim()) {
+      return toast.error("Type a project title first");
+    }
+    projVariationRef.current += 1;
+    projDescTouched.current = false; // fresh AI text may replace what's there
+    projLastGenKey.current = projectEdit.title.trim();
+    setProjSeoInfo(null);
+    void runGenerateProjDesc(projectEdit, projVariationRef.current);
+  };
+
+  // Auto-write the long description for a NEW project once the title settles
+  // (debounced 2.5s, only while empty, never after manual typing or a failed attempt)
+  useEffect(() => {
+    if (!projectEdit || projectEdit.id || projDescTouched.current || generatingDesc) return;
+    const title = projectEdit.title.trim();
+    if (title.length < 6 || projectEdit.description.trim()) return;
+    if (title === projLastGenKey.current) return;
+    const t = setTimeout(() => {
+      projLastGenKey.current = title;
+      void runGenerateProjDesc(projectEdit, 1);
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [projectEdit, generatingDesc]);
 
   const saveProject = async () => {
     if (!projectEdit) return;
@@ -458,13 +535,57 @@ export function AdminClients() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Project Description *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Project Description *</Label>
+                    <div className="flex items-center gap-2">
+                      {generatingDesc && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Writing…
+                        </span>
+                      )}
+                      {!generatingDesc && projSeoInfo?.method === "ai" && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+                          <Sparkles className="h-3 w-3" aria-hidden="true" /> AI-written
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={generateProjDescNow}
+                        disabled={generatingDesc || !projectEdit.title.trim()}
+                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+                      >
+                        {generatingDesc ? (
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Wand2 className="h-3 w-3" aria-hidden="true" />
+                        )}
+                        {projectEdit.description.trim() ? "Regenerate" : "Write with AI"}
+                      </button>
+                    </div>
+                  </div>
                   <Textarea
-                    rows={4}
+                    rows={10}
                     value={projectEdit.description}
-                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, description: e.target.value } : s))}
-                    placeholder="What was delivered, materials, impact…"
+                    onChange={(e) => {
+                      projDescTouched.current = true;
+                      setProjSeoInfo(null);
+                      setProjectEdit((s) => (s ? { ...s, description: e.target.value } : s));
+                    }}
+                    placeholder="AI writes a full, SEO-optimized case study (350-450 words) from the project title — or type your own notes and hit Write with AI."
                   />
+                  {projSeoInfo ? (
+                    <p className="flex items-start gap-1 text-xs text-zinc-400">
+                      <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+                      <span>
+                        SEO-ready: {projSeoInfo.wordCount} words · keywords: {projSeoInfo.keywords.slice(0, 4).join(", ")}
+                        {projSeoInfo.keywords.length > 4 ? ` +${projSeoInfo.keywords.length - 4} more` : ""}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-zinc-400">
+                      Auto-written as a long, ranking-focused case study — edit freely.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Year</Label>

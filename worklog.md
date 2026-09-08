@@ -360,3 +360,23 @@ Stage Summary:
 - Our Clients is now a single-row sliding logo strip: flanking arrows on desktop, arrows below row + swipe on mobile, arrows auto-hide when everything fits
 - Number badges next to client names removed; names wrap to 2 lines max (line-clamp-2) so they read fully on mobile
 - Clicking a logo still opens that client's case study page; drag-vs-click guarded so swiping never triggers navigation
+
+---
+Task ID: 20-long-seo-casestudy
+Agent: Z.ai Code (main agent)
+Task: Client project details — full LONG descriptions with SEO + Portfolio dropdown in navbar
+
+Work Log:
+- NEW src/lib/describe-project.ts: generateProjectDescription() — LLM (z-ai-web-dev-sdk, thinking disabled, 60s timeout) writes a 350-450 word SEO case study (challenge → design/mockup → fabrication/materials → installation → results → CTA, up to 6 bullets; primary keyword = project title + client name in first sentence; long-tail keywords: "<client> signage", "signage company in Lahore", "sign board maker in Pakistan", industry terms); returns metaTitle/metaDescription/keywords; long ~380-word deterministic template fallback; variation support for Regenerate
+- NEW /api/admin/generate-project-description route (admin-auth): resolves client name/industry + sibling project titles from DB for context, accepts hints (admin notes) and variation
+- api.ts: adminGenerateProjectDescription() + GenerateDescriptionResponse reuse
+- admin-clients.tsx project dialog: gold "Write with AI" / "Regenerate" button, auto-generates for NEW projects 2.5s after title settles (never overwrites existing/edited text), SEO hint line (word count + keywords), textarea rows 10
+- scripts/enrich-project-descriptions.ts: batch, idempotent enrichment (skips descriptions ≥200 words; passes original short text as AI hints) — ran 3 batches + 1 retry: ALL 16 projects across 8 clients now AI-written long case studies (218-450 words; 1 template fallback force-retried to AI)
+- case-study-view.tsx redesigned for long content: full-width alternating cards (image left/right per project), splitParagraphs() — keeps AI/author blank-line + bullet structure, auto-chunks single-paragraph walls into ~80-word paragraphs; per-page SEO: document.title ("X Signage Case Study — Madni Advertiser"), meta description from first project, JSON-LD ItemList of CreativeWork per project (removed on unmount, title restored)
+- Navbar Portfolio dropdown: NAV_LINKS Portfolio gets menu:"portfolio"; desktop hover panel (240px category nav: All Projects + 10 industries → /portfolio?cat=…; middle grid of 8 client case-study buttons with round logos → /casestudy/portfolio/<slug>; right promo card → /quote); mobile Sheet AccordionItem "portfolio" with same links + round-logo client list
+- E2E (agent-browser): desktop hover opens panel (465px, 11 category links, 8 case-study buttons, promo); Restaurant click → /portfolio?cat=Restaurant with chip active; FitZone click → /casestudy/portfolio/fitzone-gym (585 words, 7 paragraphs, title/meta/JSON-LD set); mobile 390px: accordion shows All Projects + all categories + 8 client links, Cafe Mocha click → 846 words, no horizontal overflow; admin: login → Clients → Add Project → typed title → auto-generated 378-word AI case study ("Cafe Mocha Rooftop Neon Billboard for their Food & Beverage business in Lahore…" keyword-first), Regenerate button + SEO hint shown, Cancel (no data saved: still 8 clients/16 projects); VLM-verified full-page case study (alternating cards, full multi-paragraph text, credit line, CTA); lint 0 errors; dev.log clean (generate-project-description 200 in 11s)
+
+Stage Summary:
+- Clicking a client logo now opens a full long-form SEO case study: every project has a 218-450 word AI-written description (original short text fed to the AI as ground-truth hints), rendered as alternating image/text cards with readable paragraphs
+- Real SEO on case-study pages: keyword-first text, per-page <title> + meta description + JSON-LD structured data; admin can regenerate long descriptions with one click (Write with AI), auto-writes for new projects
+- Navbar "Portfolio" now has a dropdown (desktop hover panel + mobile accordion): project categories (filters /portfolio?cat=…), 8 client case-study shortcuts with round logos, and a quote promo card
