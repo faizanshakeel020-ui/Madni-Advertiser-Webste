@@ -451,3 +451,46 @@ Stage Summary:
 - Public case study pages render a browsable image gallery (thumbs + arrows + counter) per project
 - Mobile navbar: Services/Shop/Portfolio merged into a single "Explore" dropdown panel
 - Verified end-to-end in browser incl. real file uploads; lint 0 errors
+
+---
+Task ID: 24-product-type-both
+Agent: Z.ai Code (main agent)
+Task: User: new products in admin only showed the "Custom" option — wanted BOTH "Buy Now" AND "Custom" options on new products
+
+Work Log:
+- Root cause: Product.type was a strict either/or enum (BUY_NOW | CUSTOM_ORDER) and the admin dialog silently defaulted new products to CUSTOM_ORDER, so every new product only ever got the quote flow
+- Prisma: added BOTH to the ProductType enum (buy + custom), db:push (SQLite in sync), Prisma client regenerated, dev server restarted to load the new client
+- Types updated: types.ts ProductType, admin-auth.ts MappedProduct, api.ts adminGenerateDescription payload, describe.ts DescribeInput
+- APIs: admin products POST/PUT accept and persist "BOTH"; /api/products type filter now returns BOTH items under BOTH the "Buy Now" and "Custom Order" filters (and a direct BOTH filter); /api/orders accepts BOTH products at checkout; generate-description route passes BOTH through
+- describe.ts: BOTH-aware AI copywriting — CTA mentions order now OR request a free custom quote; template fallback para3 + metaDescription updated
+- admin-products.tsx dialog: Type select now has 3 options with "Buy Now + Custom (cart & quote)" FIRST and as the NEW-PRODUCT DEFAULT; helper line under the select; price label shows "* required for Buy Buy Now" (amber) for BUY_NOW/BOTH; validation toast updated; table Type column shows both "Buy Now" + "Custom" badges for BOTH and stock column shows stock for BOTH too
+- product-card.tsx: TypeBadge renders both stacked badges for BOTH; isBuyNow/isCustom flags; cards for BOTH show "Add to Cart" (primary) + "Custom Order Available" (outline gold) buttons
+- product-detail-view.tsx: buy flow (qty stepper + Add to Cart + Order on WhatsApp) AND custom flow ("Want it custom-made instead?" amber box + notes + Request Quote → QuoteForm) both render for BOTH products, separated by an "or get it custom-made" divider; BUY_NOW-only and CUSTOM_ORDER-only products unchanged
+- shop-view.tsx: active type chip label handles "Buy + Custom items"
+- Fixed pre-existing hydration mismatch on product pages: WhatsApp link used window.location.href during render → now pageUrl state synced in useLayoutEffect (router's established pattern, eslint-disable comment), before paint
+- E2E (agent-browser): admin → Products → Add Product → Type defaults to "Buy Now + Custom (cart & quote)" with all 3 options in dropdown; created test product "Golden Moon LED Neon Sign" (BOTH, Rs 5,500, AI auto-wrote a BOTH-aware description mentioning "ready-to-ship product or as a custom order"); "Product created" toast + appears in table; product detail page shows both badges, "10 in stock", qty stepper, Add to Cart (added to cart + View Cart toast), WhatsApp button, "or get it custom-made" divider, "Want it custom-made instead?" box, Request Quote expands QuoteForm; shop card shows both badges + Add to Cart + "Custom Order Available"; curl: BOTH product appears under ?type=BUY_NOW, ?type=CUSTOM_ORDER and ?type=BOTH filters; fresh browser session = 0 console/page errors; VLM verified desktop screenshot (both badges confirmed)
+- bun run lint: 0 errors; dev.log clean
+- NOTE: test product "Golden Moon LED Neon Sign" left in catalog (delete via admin → Products → trash icon if unwanted)
+
+Stage Summary:
+- Products can now be "Buy Now + Custom" at once: new-product default is BOTH, and those products show BOTH the cart/WhatsApp checkout flow AND the custom quote flow on their pages, plus both badges/buttons on shop cards
+- BOTH products appear under both shop type filters and check out like normal Buy Now items; AI SEO descriptions mention both ordering paths
+
+---
+Task ID: 25-mobile-navbar-restore
+Agent: Z.ai Code (main agent)
+Task: User: remove the merged "Explore" mobile menu option — want a mobile navbar just like the website (all navbar options, each with its own dropdown, mobile friendly)
+
+Work Log:
+- header.tsx mobile Sheet: removed the single merged "Explore" accordion (Task 23) and replaced it with the navbar-mirroring structure — top-level items in the exact navbar order: Home, Services ▾, Shop ▾, Portfolio ▾, About Us, Contact Us
+- Each of Services / Shop / Portfolio is now its OWN AccordionItem (single-collapsible Accordion → only one dropdown open at a time, keeps the menu compact); trigger styling matches the plain links (px-3 py-2.5 text-[15px] font-bold) with the built-in chevron; active section trigger turns gold (text-primary, same active language as desktop nav)
+- Dropdown content preserved from the Explore groups but split: Services (5 service rows with 8×8 thumbnails + nested sub-service rows with 5×5 thumbnails + "View All Services →"); Shop (category rows with thumbnails + subcategory rows with icons + "Browse Full Shop →"); Portfolio ("All Projects" + category links + "Client Case Studies" rows with round logos)
+- Removed now-unused Compass icon import
+- product-detail-view.tsx: useEffect → useLayoutEffect for pageUrl sync (lint rule react-hooks/set-state-in-effect), same pattern + eslint-disable as RouterProvider
+- E2E (agent-browser, 390×844): hamburger menu shows exactly Home / Services ▾ / Shop ▾ / Portfolio ▾ / About Us / Contact Us (no "Explore"); Services expands (Outdoor Signage…Video Walls + View All Services), "View All Services →" navigates to /services; Shop expands (categories + subs + Browse Full Shop), "Neon & Wall Art" → /shop?cat=neon-art with products; Portfolio expands (All Projects + categories + 8 client case-study rows with logos), "Cafe Mocha" → /casestudy/portfolio/cafe-mocha (h1 confirmed); only one accordion open at a time (Portfolio open ⇒ Shop collapsed); no horizontal overflow (scrollWidth 390); fresh load = 0 console/page errors; VLM verified Services-open and Portfolio-open screenshots (correct order, thumbnails, no Explore, clean layout, aligned chevrons)
+- Desktop unaffected: main nav still Home/Services/Shop/Portfolio/About Us/Contact Us and the Services mega menu still opens on hover
+- bun run lint: 0 errors; dev.log clean; test screenshots removed
+
+Stage Summary:
+- Mobile menu now mirrors the website navbar: every navbar option visible with Services, Shop and Portfolio each having their own dropdown (thumbnails, sub-links, case studies) — mobile friendly with one-dropdown-at-a-time accordions and gold active-state on the current section
+- The merged "Explore" option is gone

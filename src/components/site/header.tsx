@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Compass, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -156,7 +156,191 @@ export function Header() {
                   </form>
 
                   <nav className="space-y-1" aria-label="Mobile navigation">
-                    {NAV_LINKS.filter((l) => !l.menu).map((link) => (
+                    {/* Home — first plain link */}
+                    {(() => {
+                      const home = NAV_LINKS.find((l) => !l.menu);
+                      return home ? (
+                        <button
+                          onClick={() => navigate(home.href)}
+                          className={`block w-full rounded-lg px-3 py-2.5 text-left text-[15px] font-bold ${
+                            isActive(home.href) ? "bg-accent text-accent-foreground" : "text-zinc-800 hover:bg-zinc-100"
+                          }`}
+                        >
+                          {home.label}
+                        </button>
+                      ) : null;
+                    })()}
+
+                    {/* Services / Shop / Portfolio — one dropdown each, same order as the navbar */}
+                    <Accordion type="single" collapsible>
+                      {/* ---- Services dropdown ---- */}
+                      <AccordionItem value="services" className="border-y">
+                        <AccordionTrigger
+                          className={`px-3 py-2.5 text-left text-[15px] font-bold hover:no-underline ${
+                            isActive("/services") ? "text-primary" : "text-zinc-800"
+                          }`}
+                        >
+                          Services
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3">
+                          {SERVICES.map((s) => (
+                            <div key={s.slug} className="mb-1">
+                              <button
+                                onClick={() => navigate(`/services/${s.slug}`)}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                              >
+                                <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+                                  <img
+                                    src={s.hero}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </span>
+                                <span className="flex-1">{s.name}</span>
+                                <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+                              </button>
+                              <div className="ml-5 border-l-2 border-zinc-100 pl-2">
+                                {s.subServices.map((sub) => (
+                                  <button
+                                    key={sub.name}
+                                    onClick={() => navigate(`/services/${s.slug}`)}
+                                    className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                                  >
+                                    <span className="h-5 w-5 shrink-0 overflow-hidden rounded-sm border border-zinc-200">
+                                      <img
+                                        src={sub.image}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    </span>
+                                    <span className="flex-1 truncate">{sub.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => navigate("/services")}
+                            className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
+                          >
+                            View All Services →
+                          </button>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* ---- Shop dropdown ---- */}
+                      <AccordionItem value="shop" className="border-b">
+                        <AccordionTrigger
+                          className={`px-3 py-2.5 text-left text-[15px] font-bold hover:no-underline ${
+                            isActive("/shop") ? "text-primary" : "text-zinc-800"
+                          }`}
+                        >
+                          Shop
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3">
+                          {cats.map((c) => (
+                            <div key={c.slug} className="mb-1">
+                              <button
+                                onClick={() => navigate(`/shop?cat=${c.slug}`)}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                              >
+                                <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+                                  <img
+                                    src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </span>
+                                <span className="flex-1">{c.name}</span>
+                                <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+                              </button>
+                              <div className="ml-5 border-l-2 border-zinc-100 pl-2">
+                                {c.subcategories?.map((sub) => {
+                                  const SubIcon = subcategoryIcon(sub.slug);
+                                  return (
+                                    <button
+                                      key={sub.slug}
+                                      onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
+                                      className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                                    >
+                                      <SubIcon className="h-3.5 w-3.5 shrink-0 text-primary/60" aria-hidden="true" />
+                                      {sub.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => navigate("/shop")}
+                            className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
+                          >
+                            Browse Full Shop →
+                          </button>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* ---- Portfolio dropdown ---- */}
+                      <AccordionItem value="portfolio" className="border-b">
+                        <AccordionTrigger
+                          className={`px-3 py-2.5 text-left text-[15px] font-bold hover:no-underline ${
+                            isActive("/portfolio") ? "text-primary" : "text-zinc-800"
+                          }`}
+                        >
+                          Portfolio
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3">
+                          <button
+                            onClick={() => navigate("/portfolio")}
+                            className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                          >
+                            All Projects
+                            <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+                          </button>
+                          <div className="ml-3 border-l-2 border-zinc-100 pl-2">
+                            {PORTFOLIO_CATEGORIES.filter((c) => c !== "All").map((c) => (
+                              <button
+                                key={c}
+                                onClick={() => navigate(`/portfolio?cat=${encodeURIComponent(c)}`)}
+                                className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                              >
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                          {clients.length > 0 && (
+                            <>
+                              <p className="mb-1 mt-3 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+                                Client Case Studies
+                              </p>
+                              {clients.slice(0, 8).map((c) => (
+                                <button
+                                  key={c.id}
+                                  onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
+                                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-[13px] font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+                                >
+                                  <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-zinc-200">
+                                    <img
+                                      src={c.logo}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  </span>
+                                  <span className="flex-1 truncate">{c.name}</span>
+                                </button>
+                              ))}
+                            </>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
+                    {/* Remaining plain links — About Us / Contact Us */}
+                    {NAV_LINKS.filter((l) => !l.menu && l.href !== "/").map((link) => (
                       <button
                         key={link.href}
                         onClick={() => navigate(link.href)}
@@ -168,160 +352,6 @@ export function Header() {
                       </button>
                     ))}
                   </nav>
-
-                  {/* one merged dropdown: Services + Shop + Portfolio */}
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="explore" className="border-y">
-                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
-                        <span className="flex items-center gap-2">
-                          <Compass className="h-4 w-4 text-primary" aria-hidden="true" />
-                          Explore
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-3">
-                        {/* ---- Services group ---- */}
-                        <p className="px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
-                          Services
-                        </p>
-                        {SERVICES.map((s) => (
-                          <div key={s.slug} className="mb-1">
-                            <button
-                              onClick={() => navigate(`/services/${s.slug}`)}
-                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
-                            >
-                              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
-                                <img
-                                  src={s.hero}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                  loading="lazy"
-                                />
-                              </span>
-                              <span className="flex-1">{s.name}</span>
-                              <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
-                            </button>
-                            <div className="ml-5 border-l-2 border-zinc-100 pl-2">
-                              {s.subServices.map((sub) => (
-                                <button
-                                  key={sub.name}
-                                  onClick={() => navigate(`/services/${s.slug}`)}
-                                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
-                                >
-                                  <span className="h-5 w-5 shrink-0 overflow-hidden rounded-sm border border-zinc-200">
-                                    <img
-                                      src={sub.image}
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                      loading="lazy"
-                                    />
-                                  </span>
-                                  <span className="flex-1 truncate">{sub.name}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => navigate("/services")}
-                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
-                        >
-                          View All Services →
-                        </button>
-
-                        {/* ---- Shop group ---- */}
-                        <p className="mt-4 border-t border-zinc-100 px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
-                          Shop Categories
-                        </p>
-                        {cats.map((c) => (
-                          <div key={c.slug} className="mb-1">
-                            <button
-                              onClick={() => navigate(`/shop?cat=${c.slug}`)}
-                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
-                            >
-                              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
-                                <img
-                                  src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                  loading="lazy"
-                                />
-                              </span>
-                              <span className="flex-1">{c.name}</span>
-                              <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
-                            </button>
-                            <div className="ml-5 border-l-2 border-zinc-100 pl-2">
-                              {c.subcategories?.map((sub) => {
-                                const SubIcon = subcategoryIcon(sub.slug);
-                                return (
-                                  <button
-                                    key={sub.slug}
-                                    onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
-                                  >
-                                    <SubIcon className="h-3.5 w-3.5 shrink-0 text-primary/60" aria-hidden="true" />
-                                    {sub.name}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => navigate("/shop")}
-                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
-                        >
-                          Browse Full Shop →
-                        </button>
-
-                        {/* ---- Portfolio group ---- */}
-                        <p className="mt-4 border-t border-zinc-100 px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
-                          Portfolio
-                        </p>
-                        <button
-                          onClick={() => navigate("/portfolio")}
-                          className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
-                        >
-                          All Projects
-                          <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
-                        </button>
-                        <div className="ml-3 border-l-2 border-zinc-100 pl-2">
-                          {PORTFOLIO_CATEGORIES.filter((c) => c !== "All").map((c) => (
-                            <button
-                              key={c}
-                              onClick={() => navigate(`/portfolio?cat=${encodeURIComponent(c)}`)}
-                              className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
-                            >
-                              {c}
-                            </button>
-                          ))}
-                        </div>
-                        {clients.length > 0 && (
-                          <>
-                            <p className="mb-1 mt-3 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
-                              Client Case Studies
-                            </p>
-                            {clients.slice(0, 8).map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
-                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-[13px] font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-primary"
-                              >
-                                <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-zinc-200">
-                                  <img
-                                    src={c.logo}
-                                    alt=""
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                </span>
-                                <span className="flex-1 truncate">{c.name}</span>
-                              </button>
-                            ))}
-                          </>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
 
                   <div className="space-y-2 pt-2">
                     <Button className="w-full font-bold" size="lg" onClick={() => navigate("/quote")}>

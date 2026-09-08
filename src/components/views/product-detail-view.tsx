@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   ArrowRight,
   ChevronRight,
@@ -53,7 +53,10 @@ export function ProductDetailView({ slug }: { slug: string }) {
   const [pageUrl, setPageUrl] = useState("");
   const addItem = useCart((s) => s.addItem);
 
-  useEffect(() => {
+  // Sync the real URL before paint (SSR renders "" so hydration matches) —
+  // same intentional pattern as RouterProvider.
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPageUrl(window.location.href);
   }, []);
 
