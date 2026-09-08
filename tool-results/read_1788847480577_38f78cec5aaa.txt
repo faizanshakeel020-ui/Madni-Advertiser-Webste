@@ -1,0 +1,687 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useState } from "react";
+     4→import { ChevronDown, ChevronRight, Menu, Search, ShoppingCart } from "lucide-react";
+     5→import { Button } from "@/components/ui/button";
+     6→import { Input } from "@/components/ui/input";
+     7→import { Badge } from "@/components/ui/badge";
+     8→import {
+     9→  Sheet,
+    10→  SheetContent,
+    11→  SheetHeader,
+    12→  SheetTitle,
+    13→  SheetTrigger,
+    14→} from "@/components/ui/sheet";
+    15→import {
+    16→  Accordion,
+    17→  AccordionContent,
+    18→  AccordionItem,
+    19→  AccordionTrigger,
+    20→} from "@/components/ui/accordion";
+    21→import { Logo } from "./logo";
+    22→import { WhatsAppIcon } from "./icons";
+    23→import { NAV_LINKS, SITE, whatsappUrl } from "@/lib/constants";
+    24→import { PORTFOLIO_CATEGORIES, SERVICES } from "@/lib/services-data";
+    25→import { useRoute } from "@/lib/router";
+    26→import { useCart, cartCount } from "@/store/cart";
+    27→import { useMounted } from "@/lib/use-mounted";
+    28→import { fetchCategories, fetchClients } from "@/lib/api";
+    29→import { subcategoryIcon } from "@/lib/category-icons";
+    30→import type { Category, Client } from "@/lib/types";
+    31→
+    32→type Menu = "services" | "shop" | "portfolio" | null;
+    33→
+    34→export function Header() {
+    35→  const { route, navigate } = useRoute();
+    36→  const [openMenu, setOpenMenu] = useState<Menu>(null);
+    37→  const [mobileOpen, setMobileOpen] = useState(false);
+    38→  const [cats, setCats] = useState<Category[]>([]);
+    39→  const [clients, setClients] = useState<Client[]>([]);
+    40→  const [shopCat, setShopCat] = useState("");
+    41→  const items = useCart((s) => s.items);
+    42→  const count = cartCount(items);
+    43→  const mounted = useMounted();
+    44→
+    45→  useEffect(() => {
+    46→    let alive = true;
+    47→    fetchCategories()
+    48→      .then((c) => alive && setCats(c))
+    49→      .catch(() => {});
+    50→    fetchClients()
+    51→      .then((c) => alive && setClients(c))
+    52→      .catch(() => {});
+    53→    return () => {
+    54→      alive = false;
+    55→    };
+    56→  }, []);
+    57→
+    58→  // close overlays when route changes (back/forward hash navigation)
+    59→  useEffect(() => {
+    60→    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing UI with external hash route
+    61→    setOpenMenu(null);
+    62→    setMobileOpen(false);
+    63→  }, [route.path, route.query.q, route.query.cat, route.query.sub]);
+    64→
+    65→  const isActive = (href: string) =>
+    66→    href === "/" ? route.path === "/" : route.path.startsWith(href);
+    67→
+    68→  // Active category inside the Shop mega menu: user-hovered → current shop category → first
+    69→  const activeShopCat =
+    70→    cats.find((c) => c.slug === shopCat) ??
+    71→    cats.find((c) => c.slug === route.query.cat) ??
+    72→    cats[0];
+    73→
+    74→  return (
+    75→    <>
+    76→      {/* ---------- Top utility bar (light gray) ---------- */}
+    77→      <div className="border-b border-zinc-300/70 bg-zinc-200">
+    78→        <div className="container-site flex h-20 items-center justify-between gap-4 sm:h-[88px] lg:h-24">
+    79→          <Logo />
+    80→
+    81→          {/* Contact blocks */}
+    82→          <div className="hidden items-center gap-10 md:flex">
+    83→            <div>
+    84→              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Call Us</p>
+    85→              <a
+    86→                href={SITE.phoneHref}
+    87→                className="mt-0.5 block text-sm font-bold text-zinc-900 transition-colors hover:text-primary"
+    88→              >
+    89→                {SITE.phone}
+    90→              </a>
+    91→            </div>
+    92→            <div className="hidden lg:block">
+    93→              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Email</p>
+    94→              <a
+    95→                href={SITE.emailHref}
+    96→                className="mt-0.5 block text-sm font-bold text-zinc-900 transition-colors hover:text-primary"
+    97→              >
+    98→                {SITE.email}
+    99→              </a>
+   100→            </div>
+   101→          </div>
+   102→
+   103→          <Button
+   104→            size="sm"
+   105→            className="h-9 rounded-[3px] bg-zinc-950 px-5 text-xs font-bold uppercase tracking-wider text-white shadow-none hover:bg-zinc-800 hover:text-white sm:text-sm border-b-2 border-b-primary"
+   106→            onClick={() => navigate("/quote")}
+   107→          >
+   108→            Get Quote
+   109→          </Button>
+   110→        </div>
+   111→      </div>
+   112→
+   113→      {/* ---------- Main nav bar (black, sticky) ---------- */}
+   114→      <header
+   115→        className="sticky top-0 z-50 bg-zinc-950 shadow-md"
+   116→        onMouseLeave={() => setOpenMenu(null)}
+   117→      >
+   118→        <div className="container-site flex h-12 items-center justify-between gap-4 lg:h-14">
+   119→          <div className="flex items-center gap-8">
+   120→            {/* Mobile hamburger */}
+   121→            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   122→              <SheetTrigger asChild>
+   123→                <button
+   124→                  className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 lg:hidden"
+   125→                  aria-label="Open menu"
+   126→                >
+   127→                  <Menu className="h-5 w-5" aria-hidden="true" />
+   128→                </button>
+   129→              </SheetTrigger>
+   130→              <SheetContent side="left" className="w-[320px] overflow-y-auto p-0">
+   131→                <SheetHeader className="border-b p-4">
+   132→                  <SheetTitle className="text-left">
+   133→                    <Logo />
+   134→                  </SheetTitle>
+   135→                </SheetHeader>
+   136→                <div className="p-4 space-y-4">
+   137→                  <form
+   138→                    className="relative"
+   139→                    onSubmit={(e) => {
+   140→                      e.preventDefault();
+   141→                      const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+   142→                      navigate(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+   143→                    }}
+   144→                    role="search"
+   145→                  >
+   146→                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+   147→                    <Input name="q" placeholder="Search products…" className="h-11 rounded-full pl-9" aria-label="Search shop products" />
+   148→                  </form>
+   149→
+   150→                  <nav className="space-y-1" aria-label="Mobile navigation">
+   151→                    {NAV_LINKS.filter((l) => !l.mega).map((link) => (
+   152→                      <button
+   153→                        key={link.href}
+   154→                        onClick={() => navigate(link.href)}
+   155→                        className={`block w-full rounded-lg px-3 py-2.5 text-left text-[15px] font-bold ${
+   156→                          isActive(link.href) ? "bg-accent text-accent-foreground" : "text-zinc-800 hover:bg-zinc-100"
+   157→                        }`}
+   158→                      >
+   159→                        {link.label}
+   160→                      </button>
+   161→                    ))}
+   162→                  </nav>
+   163→
+   164→                  <Accordion type="single" collapsible>
+   165→                    <AccordionItem value="services" className="border-y">
+   166→                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
+   167→                        Services
+   168→                      </AccordionTrigger>
+   169→                      <AccordionContent className="pb-2">
+   170→                        {SERVICES.map((s) => (
+   171→                          <div key={s.slug} className="mb-1">
+   172→                            <button
+   173→                              onClick={() => navigate(`/services/${s.slug}`)}
+   174→                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+   175→                            >
+   176→                              {s.name}
+   177→                            </button>
+   178→                            <div className="ml-3 border-l-2 border-zinc-100 pl-2">
+   179→                              {s.subServices.map((sub) => (
+   180→                                <button
+   181→                                  key={sub.name}
+   182→                                  onClick={() => navigate(`/services/${s.slug}`)}
+   183→                                  className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+   184→                                >
+   185→                                  {sub.name}
+   186→                                </button>
+   187→                              ))}
+   188→                            </div>
+   189→                          </div>
+   190→                        ))}
+   191→                      </AccordionContent>
+   192→                    </AccordionItem>
+   193→                    <AccordionItem value="shop" className="border-b">
+   194→                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
+   195→                        Shop Categories
+   196→                      </AccordionTrigger>
+   197→                      <AccordionContent className="pb-2">
+   198→                        {cats.map((c) => (
+   199→                          <div key={c.slug} className="mb-1">
+   200→                            <button
+   201→                              onClick={() => navigate(`/shop?cat=${c.slug}`)}
+   202→                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+   203→                            >
+   204→                              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+   205→                                <img
+   206→                                  src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+   207→                                  alt=""
+   208→                                  className="h-full w-full object-cover"
+   209→                                  loading="lazy"
+   210→                                />
+   211→                              </span>
+   212→                              <span className="flex-1">{c.name}</span>
+   213→                              <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+   214→                            </button>
+   215→                            <div className="ml-5 border-l-2 border-zinc-100 pl-2">
+   216→                              {c.subcategories?.map((sub) => {
+   217→                                const SubIcon = subcategoryIcon(sub.slug);
+   218→                                return (
+   219→                                  <button
+   220→                                    key={sub.slug}
+   221→                                    onClick={() => navigate(`/shop?cat=${c.slug}&sub=${sub.slug}`)}
+   222→                                    className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+   223→                                  >
+   224→                                    <SubIcon className="h-3.5 w-3.5 shrink-0 text-primary/60" aria-hidden="true" />
+   225→                                    {sub.name}
+   226→                                  </button>
+   227→                                );
+   228→                              })}
+   229→                            </div>
+   230→                          </div>
+   231→                        ))}
+   232→                        <button
+   233→                          onClick={() => navigate("/shop")}
+   234→                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
+   235→                        >
+   236→                          Browse Full Shop →
+   237→                        </button>
+   238→                      </AccordionContent>
+   239→                    </AccordionItem>
+   240→                    <AccordionItem value="portfolio" className="border-b">
+   241→                      <AccordionTrigger className="px-3 py-2.5 text-[15px] font-bold text-zinc-800 hover:no-underline">
+   242→                        Portfolio
+   243→                      </AccordionTrigger>
+   244→                      <AccordionContent className="pb-2">
+   245→                        <button
+   246→                          onClick={() => navigate("/portfolio")}
+   247→                          className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+   248→                        >
+   249→                          All Projects
+   250→                          <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
+   251→                        </button>
+   252→                        <div className="ml-3 border-l-2 border-zinc-100 pl-2">
+   253→                          {PORTFOLIO_CATEGORIES.filter((c) => c !== "All").map((c) => (
+   254→                            <button
+   255→                              key={c}
+   256→                              onClick={() => navigate(`/portfolio?cat=${encodeURIComponent(c)}`)}
+   257→                              className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+   258→                            >
+   259→                              {c}
+   260→                            </button>
+   261→                          ))}
+   262→                        </div>
+   263→                        {clients.length > 0 && (
+   264→                          <>
+   265→                            <p className="mb-1 mt-3 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+   266→                              Client Case Studies
+   267→                            </p>
+   268→                            {clients.slice(0, 8).map((c) => (
+   269→                              <button
+   270→                                key={c.id}
+   271→                                onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
+   272→                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-[13px] font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+   273→                              >
+   274→                                <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-zinc-200">
+   275→                                  <img
+   276→                                    src={c.logo}
+   277→                                    alt=""
+   278→                                    className="h-full w-full object-cover"
+   279→                                    loading="lazy"
+   280→                                  />
+   281→                                </span>
+   282→                                <span className="flex-1 truncate">{c.name}</span>
+   283→                              </button>
+   284→                            ))}
+   285→                          </>
+   286→                        )}
+   287→                      </AccordionContent>
+   288→                    </AccordionItem>
+   289→                  </Accordion>
+   290→
+   291→                  <div className="space-y-2 pt-2">
+   292→                    <Button className="w-full font-bold" size="lg" onClick={() => navigate("/quote")}>
+   293→                      Get a Free Quote
+   294→                    </Button>
+   295→                    <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="block">
+   296→                      <Button variant="outline" size="lg" className="w-full border-emerald-500 font-bold text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700">
+   297→                        <WhatsAppIcon className="mr-2 h-4 w-4" /> WhatsApp Us
+   298→                      </Button>
+   299→                    </a>
+   300→                  </div>
+   301→                </div>
+   302→              </SheetContent>
+   303→            </Sheet>
+   304→
+   305→            {/* Desktop nav — uppercase corporate style */}
+   306→            <nav className="hidden items-center gap-7 lg:flex" aria-label="Main navigation">
+   307→              {NAV_LINKS.map((link) =>
+   308→                link.menu ? (
+   309→                  <button
+   310→                    key={link.href}
+   311→                    onMouseEnter={() => setOpenMenu(link.menu)}
+   312→                    onClick={() => navigate(link.href)}
+   313→                    className={`flex items-center gap-1 text-[13px] font-semibold uppercase tracking-widest transition-colors ${
+   314→                      isActive(link.href)
+   315→                        ? "text-primary"
+   316→                        : "text-white hover:text-zinc-300"
+   317→                    }`}
+   318→                    aria-expanded={openMenu === link.menu}
+   319→                    aria-haspopup="true"
+   320→                  >
+   321→                    {link.label}
+   322→                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openMenu === link.menu ? "rotate-180" : ""}`} aria-hidden="true" />
+   323→                  </button>
+   324→                ) : (
+   325→                  <button
+   326→                    key={link.href}
+   327→                    onMouseEnter={() => setOpenMenu(null)}
+   328→                    onClick={() => navigate(link.href)}
+   329→                    className={`text-[13px] font-semibold uppercase tracking-widest transition-colors ${
+   330→                      isActive(link.href)
+   331→                        ? "text-primary"
+   332→                        : "text-white hover:text-zinc-300"
+   333→                    }`}
+   334→                  >
+   335→                    {link.label}
+   336→                  </button>
+   337→                )
+   338→              )}
+   339→            </nav>
+   340→          </div>
+   341→
+   342→          {/* Search + cart */}
+   343→          <div className="flex items-center gap-2 sm:gap-3">
+   344→            <form
+   345→              className="relative hidden xl:block"
+   346→              onSubmit={(e) => {
+   347→                e.preventDefault();
+   348→                const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+   349→                navigate(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+   350→              }}
+   351→              role="search"
+   352→            >
+   353→              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+   354→              <Input
+   355→                name="q"
+   356→                placeholder="Search signs, neon, banners…"
+   357→                className="h-9 w-60 rounded-full border-white/15 bg-white/10 pl-9 text-sm text-white placeholder:text-zinc-500 focus-visible:border-primary focus-visible:ring-primary/40"
+   358→                aria-label="Search shop products"
+   359→              />
+   360→            </form>
+   361→
+   362→            <button
+   363→              onClick={() => navigate("/shop")}
+   364→              className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 xl:hidden"
+   365→              aria-label="Search products"
+   366→            >
+   367→              <Search className="h-5 w-5" aria-hidden="true" />
+   368→            </button>
+   369→
+   370→            <button
+   371→              onClick={() => navigate("/cart")}
+   372→              className="relative flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+   373→              aria-label={`Cart — ${mounted ? count : 0} items`}
+   374→            >
+   375→              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+   376→              {mounted && count > 0 && (
+   377→                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground shadow">
+   378→                  {count > 99 ? "99+" : count}
+   379→                </span>
+   380→              )}
+   381→            </button>
+   382→          </div>
+   383→        </div>
+   384→
+   385→        {/* ---------- Dropdown menus (desktop) ---------- */}
+   386→        {openMenu === "services" && (
+   387→          <div
+   388→            className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
+   389→            onMouseEnter={() => setOpenMenu("services")}
+   390→          >
+   391→            <div className="container-site grid grid-cols-5 gap-8 py-8">
+   392→              {SERVICES.slice(0, 4).map((s) => (
+   393→                <div key={s.slug}>
+   394→                  <button
+   395→                    onClick={() => navigate(`/services/${s.slug}`)}
+   396→                    className="mb-3 flex items-center gap-2 text-left font-display text-sm font-bold uppercase tracking-wider text-zinc-900 hover:text-primary"
+   397→                  >
+   398→                    {s.name}
+   399→                  </button>
+   400→                  <ul className="space-y-1.5">
+   401→                    {s.subServices.map((sub) => (
+   402→                      <li key={sub.name}>
+   403→                        <button
+   404→                          onClick={() => navigate(`/services/${s.slug}`)}
+   405→                          className="text-left text-sm text-zinc-600 hover:text-primary transition-colors"
+   406→                        >
+   407→                          {sub.name}
+   408→                        </button>
+   409→                      </li>
+   410→                    ))}
+   411→                  </ul>
+   412→                </div>
+   413→              ))}
+   414→              {/* Featured promo card */}
+   415→              <button
+   416→                onClick={() => navigate("/services/exhibition")}
+   417→                className="group relative overflow-hidden rounded-xl text-left"
+   418→                aria-label="Exhibition stands service"
+   419→              >
+   420→                <img
+   421→                  src="/images/service-exhibition.png"
+   422→                  alt="Custom exhibition stands and brand activations"
+   423→                  className="h-40 w-full object-cover img-zoom"
+   424→                />
+   425→                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/30 to-transparent" aria-hidden="true" />
+   426→                <div className="absolute bottom-0 p-4">
+   427→                  <Badge className="mb-1.5 bg-primary text-primary-foreground">Featured</Badge>
+   428→                  <p className="font-display text-sm font-bold text-white">Exhibition Stands</p>
+   429→                  <p className="text-xs text-zinc-300">Custom booths for expos & events</p>
+   430→                </div>
+   431→              </button>
+   432→            </div>
+   433→          </div>
+   434→        )}
+   435→
+   436→        {openMenu === "shop" && (
+   437→          <div
+   438→            className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
+   439→            onMouseEnter={() => setOpenMenu("shop")}
+   440→          >
+   441→            <div className="container-site py-6">
+   442→              <div className="mb-4 flex items-center justify-between">
+   443→                <p className="font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
+   444→                  Shop by Category
+   445→                </p>
+   446→                <button
+   447→                  onClick={() => navigate("/shop")}
+   448→                  className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+   449→                >
+   450→                  Browse Full Shop →
+   451→                </button>
+   452→              </div>
+   453→              <div className="grid grid-cols-[250px_1fr_190px] gap-5">
+   454→                {/* Left navbar — only categories */}
+   455→                <nav
+   456→                  className="max-h-[380px] overflow-y-auto rounded-xl bg-zinc-50 p-2 scrollbar-thin"
+   457→                  aria-label="Shop categories"
+   458→                >
+   459→                  {cats.map((c) => {
+   460→                    const active = activeShopCat?.slug === c.slug;
+   461→                    return (
+   462→                      <button
+   463→                        key={c.slug}
+   464→                        onMouseEnter={() => setShopCat(c.slug)}
+   465→                        onFocus={() => setShopCat(c.slug)}
+   466→                        onClick={() => navigate(`/shop?cat=${c.slug}`)}
+   467→                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+   468→                          active
+   469→                            ? "bg-white text-zinc-900 shadow-sm"
+   470→                            : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+   471→                        }`}
+   472→                        aria-current={active ? "true" : undefined}
+   473→                      >
+   474→                        <span
+   475→                          className={`h-9 w-9 shrink-0 overflow-hidden rounded-lg border ${
+   476→                            active ? "border-primary/60" : "border-zinc-200"
+   477→                          }`}
+   478→                        >
+   479→                          <img
+   480→                            src={c.image ?? "/images/p-acrylic-led-nameplate.png"}
+   481→                            alt=""
+   482→                            className="h-full w-full object-cover"
+   483→                            loading="lazy"
+   484→                          />
+   485→                        </span>
+   486→                        <span className="min-w-0 flex-1 truncate text-sm font-bold">{c.name}</span>
+   487→                        <ChevronRight
+   488→                          className={`h-3.5 w-3.5 shrink-0 ${active ? "text-primary" : "text-zinc-300"}`}
+   489→                          aria-hidden="true"
+   490→                        />
+   491→                      </button>
+   492→                    );
+   493→                  })}
+   494→                </nav>
+   495→
+   496→                {/* Middle panel — subcategories of the selected category */}
+   497→                <div className="min-w-0">
+   498→                  {activeShopCat ? (
+   499→                    <>
+   500→                      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+   501→                        <div>
+   502→                          <p className="font-display text-base font-bold uppercase tracking-wide text-zinc-900">
+   503→                            {activeShopCat.name}
+   504→                          </p>
+   505→                          {activeShopCat.description && (
+   506→                            <p className="mt-0.5 text-xs text-zinc-500">{activeShopCat.description}</p>
+   507→                          )}
+   508→                        </div>
+   509→                        <button
+   510→                          onClick={() => navigate(`/shop?cat=${activeShopCat.slug}`)}
+   511→                          className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+   512→                        >
+   513→                          View All →
+   514→                        </button>
+   515→                      </div>
+   516→                      {activeShopCat.subcategories && activeShopCat.subcategories.length > 0 ? (
+   517→                        <div className="grid grid-cols-2 gap-3">
+   518→                          {activeShopCat.subcategories.map((sub) => {
+   519→                            const SubIcon = subcategoryIcon(sub.slug);
+   520→                            return (
+   521→                              <button
+   522→                                key={sub.slug}
+   523→                                onClick={() => navigate(`/shop?cat=${activeShopCat.slug}&sub=${sub.slug}`)}
+   524→                                className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-accent"
+   525→                              >
+   526→                                <SubIcon className="h-[18px] w-[18px] shrink-0 text-primary" aria-hidden="true" />
+   527→                                <span className="text-[13px] font-bold text-zinc-700">{sub.name}</span>
+   528→                              </button>
+   529→                            );
+   530→                          })}
+   531→                        </div>
+   532→                      ) : (
+   533→                        <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-center">
+   534→                          <p className="text-sm text-zinc-500">
+   535→                            No subcategories yet — browse all {activeShopCat.name.toLowerCase()}.
+   536→                          </p>
+   537→                        </div>
+   538→                      )}
+   539→                      <p className="mt-3 text-[11px] text-zinc-400">
+   540→                        Select a subcategory to filter the shop, or view the full range above.
+   541→                      </p>
+   542→                    </>
+   543→                  ) : (
+   544→                    <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-zinc-400">
+   545→                      Loading categories…
+   546→                    </div>
+   547→                  )}
+   548→                </div>
+   549→
+   550→                {/* Right — category promo image */}
+   551→                {activeShopCat && (
+   552→                  <button
+   553→                    onClick={() => navigate(`/shop?cat=${activeShopCat.slug}`)}
+   554→                    className="group relative w-[190px] shrink-0 overflow-hidden rounded-xl text-left"
+   555→                    aria-label={`Shop all ${activeShopCat.name}`}
+   556→                  >
+   557→                    <img
+   558→                      src={activeShopCat.image ?? "/images/p-acrylic-led-nameplate.png"}
+   559→                      alt={activeShopCat.name}
+   560→                      className="h-full min-h-[260px] w-full object-cover img-zoom"
+   561→                      loading="lazy"
+   562→                    />
+   563→                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/25 to-transparent" aria-hidden="true" />
+   564→                    <div className="absolute inset-x-0 bottom-0 p-4">
+   565→                      <p className="font-display text-sm font-bold leading-tight text-white">{activeShopCat.name}</p>
+   566→                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary group-hover:underline">
+   567→                        Shop Now →
+   568→                      </p>
+   569→                    </div>
+   570→                  </button>
+   571→                )}
+   572→              </div>
+   573→            </div>
+   574→          </div>
+   575→        )}
+   576→
+   577→        {openMenu === "portfolio" && (
+   578→          <div
+   579→            className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
+   580→            onMouseEnter={() => setOpenMenu("portfolio")}
+   581→          >
+   582→            <div className="container-site py-6">
+   583→              <div className="mb-4 flex items-center justify-between">
+   584→                <p className="font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
+   585→                  Explore Our Work
+   586→                </p>
+   587→                <button
+   588→                  onClick={() => navigate("/portfolio")}
+   589→                  className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+   590→                >
+   591→                  View Full Portfolio →
+   592→                </button>
+   593→              </div>
+   594→              <div className="grid grid-cols-[240px_1fr_190px] gap-5">
+   595→                {/* Left — project categories */}
+   596→                <nav
+   597→                  className="max-h-[380px] overflow-y-auto rounded-xl bg-zinc-50 p-2 scrollbar-thin"
+   598→                  aria-label="Portfolio categories"
+   599→                >
+   600→                  <button
+   601→                    onClick={() => navigate("/portfolio")}
+   602→                    className="flex w-full items-center justify-between rounded-lg bg-white px-3 py-2 text-left text-sm font-bold text-zinc-900 shadow-sm"
+   603→                  >
+   604→                    All Projects
+   605→                    <ChevronRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+   606→                  </button>
+   607→                  <div className="mt-1 space-y-0.5">
+   608→                    {PORTFOLIO_CATEGORIES.filter((c) => c !== "All").map((c) => (
+   609→                      <button
+   610→                        key={c}
+   611→                        onClick={() => navigate(`/portfolio?cat=${encodeURIComponent(c)}`)}
+   612→                        className="block w-full rounded-lg px-3 py-1.5 text-left text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-primary"
+   613→                      >
+   614→                        {c}
+   615→                      </button>
+   616→                    ))}
+   617→                  </div>
+   618→                </nav>
+   619→
+   620→                {/* Middle — client case studies */}
+   621→                <div className="min-w-0">
+   622→                  <p className="mb-3 font-display text-base font-bold uppercase tracking-wide text-zinc-900">
+   623→                    Client Case Studies
+   624→                  </p>
+   625→                  <div className="grid grid-cols-2 gap-2.5">
+   626→                    {clients.length === 0 ? (
+   627→                      <p className="py-6 text-sm text-zinc-400">Loading case studies…</p>
+   628→                    ) : (
+   629→                      clients.slice(0, 8).map((c) => (
+   630→                        <button
+   631→                          key={c.id}
+   632→                          onClick={() => navigate(`/casestudy/portfolio/${c.slug}`)}
+   633→                          className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-primary/60 hover:bg-accent"
+   634→                          aria-label={`View ${c.name} case study`}
+   635→                        >
+   636→                          <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-zinc-200">
+   637→                            <img
+   638→                              src={c.logo}
+   639→                              alt=""
+   640→                              className="h-full w-full object-cover"
+   641→                              loading="lazy"
+   642→                            />
+   643→                          </span>
+   644→                          <span className="min-w-0 flex-1">
+   645→                            <span className="block truncate text-[13px] font-bold text-zinc-800">{c.name}</span>
+   646→                            <span className="block truncate text-[11px] text-zinc-400">
+   647→                              {c.industry ?? `${c.projects.length} project${c.projects.length === 1 ? "" : "s"}`}
+   648→                            </span>
+   649→                          </span>
+   650→                        </button>
+   651→                      ))
+   652→                    )}
+   653→                  </div>
+   654→                  <p className="mt-3 text-[11px] text-zinc-400">
+   655→                    Click any client to see the full project story — or filter the gallery by industry.
+   656→                  </p>
+   657→                </div>
+   658→
+   659→                {/* Right — promo card */}
+   660→                <button
+   661→                  onClick={() => navigate("/quote")}
+   662→                  className="group relative w-[190px] shrink-0 overflow-hidden rounded-xl text-left"
+   663→                  aria-label="Start your project — get a free quote"
+   664→                >
+   665→                  <img
+   666→                    src="/images/proj-hotel.png"
+   667→                    alt="Custom hotel rooftop signage project"
+   668→                    className="h-full min-h-[260px] w-full object-cover img-zoom"
+   669→                    loading="lazy"
+   670→                  />
+   671→                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/25 to-transparent" aria-hidden="true" />
+   672→                  <div className="absolute inset-x-0 bottom-0 p-4">
+   673→                    <p className="font-display text-sm font-bold leading-tight text-white">Your Sign Next?</p>
+   674→                    <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary group-hover:underline">
+   675→                      Get a Free Quote →
+   676→                    </p>
+   677→                  </div>
+   678→                </button>
+   679→              </div>
+   680→            </div>
+   681→          </div>
+   682→        )}
+   683→      </header>
+   684→    </>
+   685→  );
+   686→}
+   687→

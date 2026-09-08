@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Menu, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -38,6 +37,7 @@ export function Header() {
   const [cats, setCats] = useState<Category[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [shopCat, setShopCat] = useState("");
+  const [svCat, setSvCat] = useState("");
   const items = useCart((s) => s.items);
   const count = cartCount(items);
   const mounted = useMounted();
@@ -70,6 +70,14 @@ export function Header() {
     cats.find((c) => c.slug === shopCat) ??
     cats.find((c) => c.slug === route.query.cat) ??
     cats[0];
+
+  // Active service inside the Services mega menu: user-hovered → current service page → first
+  const activeService =
+    SERVICES.find((s) => s.slug === svCat) ??
+    (route.path.startsWith("/services/")
+      ? SERVICES.find((s) => s.slug === route.path.split("/")[2])
+      : undefined) ??
+    SERVICES[0];
 
   return (
     <>
@@ -171,23 +179,46 @@ export function Header() {
                           <div key={s.slug} className="mb-1">
                             <button
                               onClick={() => navigate(`/services/${s.slug}`)}
-                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
                             >
-                              {s.name}
+                              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
+                                <img
+                                  src={s.hero}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              </span>
+                              <span className="flex-1">{s.name}</span>
+                              <ChevronRight className="h-3.5 w-3.5 text-zinc-300" aria-hidden="true" />
                             </button>
-                            <div className="ml-3 border-l-2 border-zinc-100 pl-2">
+                            <div className="ml-5 border-l-2 border-zinc-100 pl-2">
                               {s.subServices.map((sub) => (
                                 <button
                                   key={sub.name}
                                   onClick={() => navigate(`/services/${s.slug}`)}
-                                  className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
+                                  className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
                                 >
-                                  {sub.name}
+                                  <span className="h-5 w-5 shrink-0 overflow-hidden rounded-sm border border-zinc-200">
+                                    <img
+                                      src={sub.image}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  </span>
+                                  <span className="flex-1 truncate">{sub.name}</span>
                                 </button>
                               ))}
                             </div>
                           </div>
                         ))}
+                        <button
+                          onClick={() => navigate("/services")}
+                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-primary hover:bg-zinc-100"
+                        >
+                          View All Services →
+                        </button>
                       </AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="shop" className="border-b">
@@ -388,47 +419,137 @@ export function Header() {
             className="absolute inset-x-0 top-full hidden border-b border-zinc-100 bg-white shadow-xl shadow-zinc-950/10 lg:block"
             onMouseEnter={() => setOpenMenu("services")}
           >
-            <div className="container-site grid grid-cols-5 gap-8 py-8">
-              {SERVICES.slice(0, 4).map((s) => (
-                <div key={s.slug}>
-                  <button
-                    onClick={() => navigate(`/services/${s.slug}`)}
-                    className="mb-3 flex items-center gap-2 text-left font-display text-sm font-bold uppercase tracking-wider text-zinc-900 hover:text-primary"
-                  >
-                    {s.name}
-                  </button>
-                  <ul className="space-y-1.5">
-                    {s.subServices.map((sub) => (
-                      <li key={sub.name}>
-                        <button
-                          onClick={() => navigate(`/services/${s.slug}`)}
-                          className="text-left text-sm text-zinc-600 hover:text-primary transition-colors"
+            <div className="container-site py-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="font-display text-sm font-bold uppercase tracking-wider text-zinc-900">
+                  Our Services
+                </p>
+                <button
+                  onClick={() => navigate("/services")}
+                  className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+                >
+                  View All Services →
+                </button>
+              </div>
+              <div className="grid grid-cols-[250px_1fr_190px] gap-5">
+                {/* Left — service list with logo thumbnails */}
+                <nav
+                  className="max-h-[380px] overflow-y-auto rounded-xl bg-zinc-50 p-2 scrollbar-thin"
+                  aria-label="Our services"
+                >
+                  {SERVICES.map((s) => {
+                    const active = activeService?.slug === s.slug;
+                    return (
+                      <button
+                        key={s.slug}
+                        onMouseEnter={() => setSvCat(s.slug)}
+                        onFocus={() => setSvCat(s.slug)}
+                        onClick={() => navigate(`/services/${s.slug}`)}
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                          active
+                            ? "bg-white text-zinc-900 shadow-sm"
+                            : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                        }`}
+                        aria-current={active ? "true" : undefined}
+                      >
+                        <span
+                          className={`h-9 w-9 shrink-0 overflow-hidden rounded-lg border ${
+                            active ? "border-primary/60" : "border-zinc-200"
+                          }`}
                         >
-                          {sub.name}
+                          <img
+                            src={s.hero}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold">{s.name}</span>
+                        <ChevronRight
+                          className={`h-3.5 w-3.5 shrink-0 ${active ? "text-primary" : "text-zinc-300"}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                {/* Middle — sub-services of the active service */}
+                <div className="min-w-0">
+                  {activeService ? (
+                    <>
+                      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <div>
+                          <p className="font-display text-base font-bold uppercase tracking-wide text-zinc-900">
+                            {activeService.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-zinc-500">{activeService.tagline}</p>
+                        </div>
+                        <button
+                          onClick={() => navigate(`/services/${activeService.slug}`)}
+                          className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+                        >
+                          View Service →
                         </button>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {activeService.subServices.map((sub) => (
+                          <button
+                            key={sub.name}
+                            onClick={() => navigate(`/services/${activeService.slug}`)}
+                            className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-left transition-colors hover:border-primary/60 hover:bg-accent"
+                          >
+                            <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-100">
+                              <img
+                                src={sub.image}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13px] font-bold text-zinc-700">{sub.name}</span>
+                              <span className="block truncate text-[11px] text-zinc-400">
+                                {sub.description}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-[11px] text-zinc-400">
+                        Hover a service on the left to explore it — click any item to open the full service page.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-zinc-400">
+                      Loading services…
+                    </div>
+                  )}
                 </div>
-              ))}
-              {/* Featured promo card */}
-              <button
-                onClick={() => navigate("/services/exhibition")}
-                className="group relative overflow-hidden rounded-xl text-left"
-                aria-label="Exhibition stands service"
-              >
-                <img
-                  src="/images/service-exhibition.png"
-                  alt="Custom exhibition stands and brand activations"
-                  className="h-40 w-full object-cover img-zoom"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/30 to-transparent" aria-hidden="true" />
-                <div className="absolute bottom-0 p-4">
-                  <Badge className="mb-1.5 bg-primary text-primary-foreground">Featured</Badge>
-                  <p className="font-display text-sm font-bold text-white">Exhibition Stands</p>
-                  <p className="text-xs text-zinc-300">Custom booths for expos & events</p>
-                </div>
-              </button>
+
+                {/* Right — active service promo image */}
+                {activeService && (
+                  <button
+                    onClick={() => navigate(`/services/${activeService.slug}`)}
+                    className="group relative w-[190px] shrink-0 overflow-hidden rounded-xl text-left"
+                    aria-label={`Open ${activeService.name} service page`}
+                  >
+                    <img
+                      src={activeService.hero}
+                      alt={activeService.name}
+                      className="h-full min-h-[260px] w-full object-cover img-zoom"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/25 to-transparent" aria-hidden="true" />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p className="font-display text-sm font-bold leading-tight text-white">{activeService.name}</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary group-hover:underline">
+                        View Service →
+                      </p>
+                    </div>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
