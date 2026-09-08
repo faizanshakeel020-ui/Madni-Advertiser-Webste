@@ -32,7 +32,10 @@ export async function GET(req: NextRequest) {
         { description: { contains: q } },
       ];
     }
-    if (type === "BUY_NOW" || type === "CUSTOM_ORDER") where.type = type;
+    // BOTH products (buy + custom) appear under both type filters
+    if (type === "BUY_NOW") where.type = { in: ["BUY_NOW", "BOTH"] };
+    else if (type === "CUSTOM_ORDER") where.type = { in: ["CUSTOM_ORDER", "BOTH"] };
+    else if (type === "BOTH") where.type = "BOTH";
     if (min || max) {
       where.AND = [
         { price: min ? { gte: Number(min) } : undefined },

@@ -24,7 +24,7 @@ export type DescribeInput = {
   name: string;
   categoryId?: string | null;
   subcategoryId?: string | null;
-  type?: "BUY_NOW" | "CUSTOM_ORDER" | null;
+  type?: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH" | null;
   price?: number | null;
   /** Free-form hints the admin typed (materials, colors, use case…). */
   hints?: string | null;
@@ -90,8 +90,10 @@ async function aiDescribe(
 
   const type = input.type ?? "CUSTOM_ORDER";
   const cta =
-    type === "BUY_NOW"
-      ? "End with a call to action to order now / add to cart with fast delivery across Pakistan and cash on delivery."
+    type === "BUY_NOW" || type === "BOTH"
+      ? type === "BOTH"
+        ? "End with a call to action to order now (fast delivery across Pakistan, cash on delivery) OR request a free custom quote for custom sizes and designs."
+        : "End with a call to action to order now / add to cart with fast delivery across Pakistan and cash on delivery."
       : "End with a call to action to request a free custom quote (mention free design support and custom sizes).";
 
   const system = [
@@ -118,7 +120,7 @@ async function aiDescribe(
 
   const context = [
     `Product name: ${input.name}`,
-    `Type: ${type === "BUY_NOW" ? "Buy Now (fixed price, cart checkout)" : "Custom Order (quote-based)"}`,
+    `Type: ${type === "BUY_NOW" ? "Buy Now (fixed price, cart checkout)" : type === "BOTH" ? "Buy Now + Custom Order (fixed price, cart checkout AND free custom quote)" : "Custom Order (quote-based)"}`,
     categoryName ? `Category: ${categoryName}` : null,
     subcategoryName ? `Subcategory: ${subcategoryName}` : null,
     input.price != null ? `Price: PKR ${input.price.toLocaleString("en-PK")}` : null,
@@ -185,7 +187,9 @@ function templateDescribe(
   const para3 =
     type === "BUY_NOW"
       ? `Order now and get this ${lower} delivered to your doorstep anywhere in ${COUNTRY} — cash on delivery available. Add it to your cart today.`
-      : `Request a free quote for your custom ${lower} today. Tell us your size and design idea and our ${CITY} team will send you a fair price with free design support.`;
+      : type === "BOTH"
+        ? `Order now for fast delivery anywhere in ${COUNTRY} (cash on delivery available), or request a free custom quote for your own size, colour and design — our ${CITY} team replies with pricing and a free mockup.`
+        : `Request a free quote for your custom ${lower} today. Tell us your size and design idea and our ${CITY} team will send you a fair price with free design support.`;
 
   const description = [para1, para2, bullets, para3].join("\n\n");
 
@@ -193,7 +197,7 @@ function templateDescribe(
     description,
     metaTitle: clamp(`${name} — ${categoryName ?? "Custom Signs"} | ${BRAND}`, 60),
     metaDescription: clamp(
-      `Order ${name} in ${CITY}, ${COUNTRY}. Custom-made, premium finish${type === "BUY_NOW" ? ", fast delivery" : ", free quote"}. By ${BRAND}.`,
+      `Order ${name} in ${CITY}, ${COUNTRY}. Custom-made, premium finish${type === "BUY_NOW" || type === "BOTH" ? ", fast delivery" : ", free quote"}. By ${BRAND}.`,
       160
     ),
     keywords: [

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const name = String(b.name ?? "").trim();
     if (!name) return NextResponse.json({ error: "Product name is required" }, { status: 400 });
 
-    const type = b.type === "BUY_NOW" || b.type === "CUSTOM_ORDER" ? b.type : null;
+    const type = b.type === "BUY_NOW" || b.type === "CUSTOM_ORDER" || b.type === "BOTH" ? b.type : null;
     const price =
       typeof b.price === "number" && Number.isFinite(b.price) && b.price > 0 ? Math.round(b.price) : null;
     const variation = Number.isFinite(Number(b.variation)) ? Math.max(1, Math.min(20, Number(b.variation))) : 1;

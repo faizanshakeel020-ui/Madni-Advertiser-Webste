@@ -11,11 +11,26 @@ import { formatPKR } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 export function TypeBadge({ type }: { type: Product["type"] }) {
-  return type === "BUY_NOW" ? (
-    <Badge className="bg-primary text-primary-foreground hover:bg-primary gap-1">
-      <Zap className="h-3 w-3" aria-hidden="true" /> Buy Now
-    </Badge>
-  ) : (
+  if (type === "BUY_NOW") {
+    return (
+      <Badge className="bg-primary text-primary-foreground hover:bg-primary gap-1">
+        <Zap className="h-3 w-3" aria-hidden="true" /> Buy Now
+      </Badge>
+    );
+  }
+  if (type === "BOTH") {
+    return (
+      <span className="flex flex-col items-start gap-1.5">
+        <Badge className="bg-primary text-primary-foreground hover:bg-primary gap-1">
+          <Zap className="h-3 w-3" aria-hidden="true" /> Buy Now
+        </Badge>
+        <Badge variant="secondary" className="border border-primary/50 bg-zinc-950 text-primary hover:bg-zinc-950">
+          Custom Order
+        </Badge>
+      </span>
+    );
+  }
+  return (
     <Badge variant="secondary" className="border border-primary/50 bg-zinc-950 text-primary hover:bg-zinc-950">
       Custom Order
     </Badge>
@@ -26,7 +41,8 @@ export function ProductCard({ product }: { product: Product }) {
   const { navigate } = useRoute();
   const addItem = useCart((s) => s.addItem);
   const [adding, setAdding] = useState(false);
-  const isBuyNow = product.type === "BUY_NOW";
+  const isBuyNow = product.type === "BUY_NOW" || product.type === "BOTH";
+  const isCustom = product.type === "CUSTOM_ORDER" || product.type === "BOTH";
 
   const handleAdd = () => {
     if (!isBuyNow) {
@@ -105,8 +121,8 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        <div className="mt-3.5 pt-0.5">
-          {isBuyNow ? (
+        <div className="mt-3.5 flex flex-col gap-2 pt-0.5">
+          {isBuyNow && (
             <Button
               size="sm"
               className="w-full font-bold"
@@ -120,14 +136,15 @@ export function ProductCard({ product }: { product: Product }) {
               )}
               {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
             </Button>
-          ) : (
+          )}
+          {isCustom && (
             <Button
               size="sm"
               variant="outline"
               className="w-full border-primary/40 font-bold text-primary hover:bg-primary hover:text-primary-foreground"
               onClick={() => navigate(`/product/${product.slug}`)}
             >
-              Request Quote <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              {isBuyNow ? "Custom Order Available" : "Request Quote"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
         </div>

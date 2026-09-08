@@ -69,7 +69,7 @@ type EditState = {
   description: string;
   price: string;
   oldPrice: string;
-  type: "BUY_NOW" | "CUSTOM_ORDER";
+  type: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH";
   categoryId: string;
   subcategoryId: string;
   images: string[];
@@ -86,7 +86,7 @@ const emptyProduct: EditState = {
   description: "",
   price: "",
   oldPrice: "",
-  type: "CUSTOM_ORDER",
+  type: "BOTH",
   categoryId: "",
   subcategoryId: "",
   images: [],
@@ -211,7 +211,7 @@ export function AdminProducts() {
         name: string;
         categoryId: string;
         subcategoryId: string;
-        type: "BUY_NOW" | "CUSTOM_ORDER";
+        type: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH";
         price: string;
         description: string;
       },
@@ -344,7 +344,8 @@ export function AdminProducts() {
     if (!editing.name.trim()) return toast.error("Product name is required");
     if (!editing.categoryId && editing.id) return toast.error("Select a category");
     if (!editing.description.trim()) return toast.error("Description is required");
-    if (editing.type === "BUY_NOW" && !editing.price) return toast.error("Buy Now products need a price");
+    if ((editing.type === "BUY_NOW" || editing.type === "BOTH") && !editing.price)
+      return toast.error("Buy Now needs a price — enter a price or switch the type to Custom Order");
     if (editing.images.length === 0) return toast.error("Add at least one product image");
 
     const slug = editing.slug.trim() || slugify(editing.name);
@@ -453,6 +454,11 @@ export function AdminProducts() {
                       <td className="px-4 py-3">
                         {p.type === "BUY_NOW" ? (
                           <Badge className="bg-primary text-primary-foreground hover:bg-primary">Buy Now</Badge>
+                        ) : p.type === "BOTH" ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Badge className="bg-primary text-primary-foreground hover:bg-primary">Buy Now</Badge>
+                            <Badge variant="secondary" className="border border-primary/40 bg-zinc-950 text-primary hover:bg-zinc-950">Custom</Badge>
+                          </span>
                         ) : (
                           <Badge variant="secondary" className="border border-primary/40 bg-zinc-950 text-primary hover:bg-zinc-950">Custom</Badge>
                         )}
@@ -460,7 +466,7 @@ export function AdminProducts() {
                       <td className="px-4 py-3 font-bold text-zinc-800">
                         {p.price === null ? <span className="text-zinc-400">Quote</span> : formatPKR(p.price)}
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">{p.type === "BUY_NOW" ? p.stock : "—"}</td>
+                      <td className="px-4 py-3 text-zinc-600">{p.type === "CUSTOM_ORDER" ? "—" : p.stock}</td>
                       <td className="px-4 py-3">
                         {p.featured ? <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" /> : <span className="text-zinc-300">—</span>}
                       </td>
@@ -586,16 +592,25 @@ export function AdminProducts() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Type *</Label>
-                  <Select value={editing.type} onValueChange={(v: "BUY_NOW" | "CUSTOM_ORDER") => setEditing((s) => (s ? { ...s, type: v } : s))}>
+                  <Select value={editing.type} onValueChange={(v: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH") => setEditing((s) => (s ? { ...s, type: v } : s))}>
                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="BOTH">Buy Now + Custom (cart &amp; quote)</SelectItem>
                       <SelectItem value="BUY_NOW">Buy Now (cart + checkout)</SelectItem>
                       <SelectItem value="CUSTOM_ORDER">Custom Order (quote only)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-zinc-400">“Buy Now + Custom” shows both an Add to Cart button and a Request Quote option on the product page.</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Price (Rs) {editing.type === "CUSTOM_ORDER" && <span className="text-zinc-400">— blank for quote-based</span>}</Label>
+                  <Label>
+                    Price (Rs){" "}
+                    {editing.type === "CUSTOM_ORDER" ? (
+                      <span className="text-zinc-400">— blank for quote-based</span>
+                    ) : (
+                      <span className="text-amber-600">* required for Buy Now</span>
+                    )}
+                  </Label>
                   <Input type="number" min={0} value={editing.price} onChange={(e) => setEditing((s) => (s ? { ...s, price: e.target.value } : s))} placeholder="e.g. 3500" />
                 </div>
                 <div className="space-y-1.5">

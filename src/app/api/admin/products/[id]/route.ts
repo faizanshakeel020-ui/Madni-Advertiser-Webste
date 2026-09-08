@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           b.oldPrice === null || b.oldPrice === undefined || b.oldPrice === ""
             ? null
             : Number(b.oldPrice),
-        type: b.type === "BUY_NOW" ? "BUY_NOW" : "CUSTOM_ORDER",
+        type: b.type === "BUY_NOW" ? "BUY_NOW" : b.type === "BOTH" ? "BOTH" : "CUSTOM_ORDER",
         categoryId: finalCategoryId,
         subcategoryId: subcategoryId ?? null,
         images: JSON.stringify(Array.isArray(b.images) ? b.images : JSON.parse(existing.images || "[]")),

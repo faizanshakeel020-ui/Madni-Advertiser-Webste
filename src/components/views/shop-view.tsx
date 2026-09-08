@@ -270,7 +270,7 @@ export function ShopView() {
                 {activeType && (
                   <button onClick={() => setParam("type", "")}>
                     <Badge variant="secondary" className="gap-1.5 bg-zinc-100 py-1.5 pl-3 pr-2 text-zinc-700 hover:bg-zinc-200">
-                      {activeType === "BUY_NOW" ? "Buy Now items" : "Custom Order items"} <X className="h-3 w-3" aria-hidden="true" />
+                      {activeType === "BUY_NOW" ? "Buy Now items" : activeType === "BOTH" ? "Buy + Custom items" : "Custom Order items"} <X className="h-3 w-3" aria-hidden="true" />
                     </Badge>
                   </button>
                 )}

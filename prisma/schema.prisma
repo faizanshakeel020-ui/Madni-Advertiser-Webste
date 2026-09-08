@@ -31,10 +31,11 @@ model Subcategory {
   products   Product[]
 }
 
-// ---- Products: BUY_NOW (cart enabled) or CUSTOM_ORDER (quote only) ----
+// ---- Products: BUY_NOW (cart enabled), CUSTOM_ORDER (quote only), BOTH (cart + quote) ----
 enum ProductType {
   BUY_NOW
   CUSTOM_ORDER
+  BOTH
 }
 
 model Product {

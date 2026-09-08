@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         description,
         price: b.price === null || b.price === undefined || b.price === "" ? null : Number(b.price),
         oldPrice: b.oldPrice === null || b.oldPrice === undefined || b.oldPrice === "" ? null : Number(b.oldPrice),
-        type: b.type === "BUY_NOW" ? "BUY_NOW" : "CUSTOM_ORDER",
+        type: b.type === "BUY_NOW" ? "BUY_NOW" : b.type === "BOTH" ? "BOTH" : "CUSTOM_ORDER",
         categoryId,
         subcategoryId,
         images: JSON.stringify(Array.isArray(b.images) ? b.images : []),

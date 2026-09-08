@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       if (item.qty > 99) item.qty = 99;
     }
 
-    // verify items exist, are BUY_NOW, and compute subtotal server-side
+    // verify items exist, are purchasable (BUY_NOW or BOTH), and compute subtotal server-side
     const ids = items.map((i) => i.id);
     const dbProducts = await db.product.findMany({ where: { id: { in: ids } } });
     const priceMap = new Map(dbProducts.map((p) => [p.id, p]));
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const validatedItems: OrderItemPayload[] = [];
     for (const item of items) {
       const p = priceMap.get(item.id);
-      if (!p || p.type !== "BUY_NOW") {
+      if (!p || (p.type !== "BUY_NOW" && p.type !== "BOTH")) {
         return NextResponse.json(
           { error: `"${item.name}" is not available for direct purchase` },
           { status: 400 }

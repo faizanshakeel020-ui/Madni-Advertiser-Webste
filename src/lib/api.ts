@@ -269,7 +269,7 @@ export async function adminGenerateDescription(data: {
   name: string;
   categoryId?: string | null;
   subcategoryId?: string | null;
-  type?: "BUY_NOW" | "CUSTOM_ORDER";
+  type?: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH";
   price?: number | null;
   hints?: string;
   variation?: number;

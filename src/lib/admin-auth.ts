@@ -67,7 +67,7 @@ export type MappedProduct = {
   description: string;
   price: number | null;
   oldPrice: number | null;
-  type: "BUY_NOW" | "CUSTOM_ORDER";
+  type: "BUY_NOW" | "CUSTOM_ORDER" | "BOTH";
   categoryId: string;
   subcategoryId: string | null;
   category?: { id: string; slug: string; name: string };

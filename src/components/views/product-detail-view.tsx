@@ -50,7 +50,12 @@ export function ProductDetailView({ slug }: { slug: string }) {
   const [adding, setAdding] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
   const [customNotes, setCustomNotes] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
   const addItem = useCart((s) => s.addItem);
+
+  useEffect(() => {
+    setPageUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -93,7 +98,8 @@ export function ProductDetailView({ slug }: { slug: string }) {
   }
 
   const { product, related } = data;
-  const isBuyNow = product.type === "BUY_NOW";
+  const isBuyNow = product.type === "BUY_NOW" || product.type === "BOTH";
+  const isCustom = product.type === "CUSTOM_ORDER" || product.type === "BOTH";
   const images = product.images.length ? product.images : ["/images/p-acrylic-led-nameplate.png"];
 
   const handleAddToCart = () => {
@@ -280,8 +286,8 @@ export function ProductDetailView({ slug }: { slug: string }) {
               </div>
             )}
 
-            {/* Buy vs Custom flows */}
-            {isBuyNow ? (
+            {/* Buy vs Custom flows — BOTH products show both */}
+            {isBuyNow && (
               <div className="mt-7">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 items-center rounded-lg border">
@@ -324,7 +330,7 @@ export function ProductDetailView({ slug }: { slug: string }) {
                   </Button>
                   <a
                     href={whatsappUrl(
-                      `Hello! I want to order this product:\n${product.name}\nPrice: ${product.price ? formatPKR(product.price) : "custom"}\n(Link: ${typeof window !== "undefined" ? window.location.href : ""})`
+                      `Hello! I want to order this product:\n${product.name}\nPrice: ${product.price ? formatPKR(product.price) : "custom"}\n(Link: ${pageUrl})`
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -343,17 +349,30 @@ export function ProductDetailView({ slug }: { slug: string }) {
                   Cash on Delivery & Bank Transfer available at checkout.
                 </p>
               </div>
-            ) : (
+            )}
+
+            {isBuyNow && isCustom && (
+              <div className="my-7 flex items-center gap-3" aria-hidden="true">
+                <span className="h-px flex-1 bg-zinc-200" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">or get it custom-made</span>
+                <span className="h-px flex-1 bg-zinc-200" />
+              </div>
+            )}
+
+            {isCustom && (
               <div className="mt-7">
                 {!showQuote ? (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
                     <div className="flex items-start gap-3">
                       <PencilRuler className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
                       <div className="flex-1">
-                        <h3 className="font-display text-base font-bold text-zinc-900">Custom-made to your specs</h3>
+                        <h3 className="font-display text-base font-bold text-zinc-900">
+                          {isBuyNow ? "Want it custom-made instead?" : "Custom-made to your specs"}
+                        </h3>
                         <p className="mt-1 text-sm text-zinc-600">
-                          Select your options above and send us a quote request — we&apos;ll reply with pricing,
-                          timeline and a free design mockup.
+                          {isBuyNow
+                            ? "Need a different size, colour or design? Send us a quote request — we'll reply with pricing, timeline and a free design mockup."
+                            : "Select your options above and send us a quote request — we'll reply with pricing, timeline and a free design mockup."}
                         </p>
                         <div className="mt-4">
                           <Label htmlFor="pd-notes" className="text-sm font-bold text-zinc-800">

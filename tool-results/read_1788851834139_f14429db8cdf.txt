@@ -1,0 +1,823 @@
+     1→"use client";
+     2→
+     3→/**
+     4→ * Admin — Products management (add/edit/delete, images, categories, type, stock).
+     5→ */
+     6→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     7→import {
+     8→  Loader2,
+     9→  Pencil,
+    10→  Plus,
+    11→  Search,
+    12→  Sparkles,
+    13→  Star,
+    14→  Trash2,
+    15→  Upload,
+    16→  Wand2,
+    17→  X,
+    18→} from "lucide-react";
+    19→import { toast } from "sonner";
+    20→import { Button } from "@/components/ui/button";
+    21→import { Input } from "@/components/ui/input";
+    22→import { Label } from "@/components/ui/label";
+    23→import { Textarea } from "@/components/ui/textarea";
+    24→import { Badge } from "@/components/ui/badge";
+    25→import { Switch } from "@/components/ui/switch";
+    26→import { Skeleton } from "@/components/ui/skeleton";
+    27→import {
+    28→  Dialog,
+    29→  DialogContent,
+    30→  DialogHeader,
+    31→  DialogTitle,
+    32→  DialogDescription,
+    33→} from "@/components/ui/dialog";
+    34→import {
+    35→  AlertDialog,
+    36→  AlertDialogAction,
+    37→  AlertDialogCancel,
+    38→  AlertDialogContent,
+    39→  AlertDialogDescription,
+    40→  AlertDialogFooter,
+    41→  AlertDialogHeader,
+    42→  AlertDialogTitle,
+    43→} from "@/components/ui/alert-dialog";
+    44→import {
+    45→  Select,
+    46→  SelectContent,
+    47→  SelectItem,
+    48→  SelectTrigger,
+    49→  SelectValue,
+    50→} from "@/components/ui/select";
+    51→import {
+    52→  adminCategorizeProduct,
+    53→  adminDeleteProduct,
+    54→  adminFetchProducts,
+    55→  adminGenerateDescription,
+    56→  adminSaveProduct,
+    57→  fetchCategories,
+    58→  uploadImages,
+    59→  type GenerateDescriptionResponse,
+    60→} from "@/lib/api";
+    61→import { formatPKR, slugify } from "@/lib/format";
+    62→import { useRoute } from "@/lib/router";
+    63→import type { Category, Product, ProductOption, ProductSpec } from "@/lib/types";
+    64→
+    65→type EditState = {
+    66→  id?: string;
+    67→  name: string;
+    68→  slug: string;
+    69→  description: string;
+    70→  price: string;
+    71→  oldPrice: string;
+    72→  type: "BUY_NOW" | "CUSTOM_ORDER";
+    73→  categoryId: string;
+    74→  subcategoryId: string;
+    75→  images: string[];
+    76→  specs: ProductSpec[];
+    77→  options: ProductOption[];
+    78→  badge: string;
+    79→  stock: string;
+    80→  featured: boolean;
+    81→};
+    82→
+    83→const emptyProduct: EditState = {
+    84→  name: "",
+    85→  slug: "",
+    86→  description: "",
+    87→  price: "",
+    88→  oldPrice: "",
+    89→  type: "CUSTOM_ORDER",
+    90→  categoryId: "",
+    91→  subcategoryId: "",
+    92→  images: [],
+    93→  specs: [],
+    94→  options: [],
+    95→  badge: "",
+    96→  stock: "10",
+    97→  featured: false,
+    98→};
+    99→
+   100→export function AdminProducts() {
+   101→  const { navigate } = useRoute();
+   102→  const [products, setProducts] = useState<Product[]>([]);
+   103→  const [cats, setCats] = useState<Category[]>([]);
+   104→  const [loading, setLoading] = useState(true);
+   105→  const [search, setSearch] = useState("");
+   106→  const [editOpen, setEditOpen] = useState(false);
+   107→  const [editing, setEditing] = useState<EditState | null>(null);
+   108→  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+   109→  const [saving, setSaving] = useState(false);
+   110→  const [uploadingImg, setUploadingImg] = useState(false);
+   111→  const [imgUrlInput, setImgUrlInput] = useState("");
+   112→  // AI auto-categorization state
+   113→  const [detecting, setDetecting] = useState(false);
+   114→  const [detectedLabel, setDetectedLabel] = useState<string | null>(null);
+   115→  const catTouched = useRef(false); // set when the admin manually picks a category
+   116→  const lastDetectKey = useRef(""); // "name|desc" of the last auto-detect run
+   117→  // AI description generation state
+   118→  const [generatingDesc, setGeneratingDesc] = useState(false);
+   119→  const [seoInfo, setSeoInfo] = useState<GenerateDescriptionResponse | null>(null);
+   120→  const descTouched = useRef(false); // set when the admin types their own description
+   121→  const lastGenKey = useRef(""); // product name of the last auto-generation attempt
+   122→  const variationRef = useRef(1); // regenerate → different angle each click
+   123→
+   124→  const load = async () => {
+   125→    setLoading(true);
+   126→    try {
+   127→      const [ps, cs] = await Promise.all([adminFetchProducts(), fetchCategories()]);
+   128→      setProducts(ps);
+   129→      setCats(cs);
+   130→    } catch (e) {
+   131→      toast.error("Failed to load products");
+   132→    } finally {
+   133→      setLoading(false);
+   134→    }
+   135→  };
+   136→
+   137→  useEffect(() => {
+   138→    load();
+   139→  }, []);
+   140→
+   141→  const filtered = useMemo(
+   142→    () =>
+   143→      products.filter(
+   144→        (p) =>
+   145→          !search ||
+   146→          p.name.toLowerCase().includes(search.toLowerCase()) ||
+   147→          p.slug.toLowerCase().includes(search.toLowerCase())
+   148→      ),
+   149→    [products, search]
+   150→  );
+   151→
+   152→  /** Ask the backend to auto-assign category + subcategory from the product name/description. */
+   153→  const runDetect = useCallback(
+   154→    async (name: string, description: string) => {
+   155→      if (!name.trim()) return;
+   156→      setDetecting(true);
+   157→      try {
+   158→        const res = await adminCategorizeProduct(name.trim(), description.trim() || undefined);
+   159→        if (res?.categoryId) {
+   160→          setEditing((s) =>
+   161→            s && !catTouched.current
+   162→              ? { ...s, categoryId: res.categoryId, subcategoryId: res.subcategoryId ?? "" }
+   163→              : s
+   164→          );
+   165→          const label = `${res.categoryName}${res.subcategoryName ? ` › ${res.subcategoryName}` : ""}`;
+   166→          setDetectedLabel(label);
+   167→          toast.success(`Category auto-assigned: ${label}`, {
+   168→            description: "You can still change it manually.",
+   169→          });
+   170→        }
+   171→      } catch {
+   172→        // silent — admin can still pick manually; server retries on save
+   173→      } finally {
+   174→        setDetecting(false);
+   175→      }
+   176→    },
+   177→    []
+   178→  );
+   179→
+   180→  // Auto-detect while typing a NEW product's name (debounced, never overrides a manual pick,
+   181→  // and stops once a category has been assigned)
+   182→  useEffect(() => {
+   183→    if (!editing || editing.id || catTouched.current || editing.categoryId) return;
+   184→    const name = editing.name.trim();
+   185→    const desc = editing.description.trim();
+   186→    if (name.length < 4) return;
+   187→    const key = `${name}|${desc}`;
+   188→    if (key === lastDetectKey.current) return;
+   189→    const t = setTimeout(() => {
+   190→      lastDetectKey.current = key;
+   191→      void runDetect(name, desc);
+   192→    }, 1200);
+   193→    return () => clearTimeout(t);
+   194→  }, [editing, runDetect]);
+   195→
+   196→  const detectNow = () => {
+   197→    if (!editing || !editing.name.trim()) {
+   198→      toast.error("Type a product name first");
+   199→      return;
+   200→    }
+   201→    catTouched.current = false; // allow auto-fill again
+   202→    lastDetectKey.current = `${editing.name.trim()}|${editing.description.trim()}`;
+   203→    setDetectedLabel(null);
+   204→    void runDetect(editing.name, editing.description);
+   205→  };
+   206→
+   207→  /** AI-write an SEO-optimized description and fill the textarea. */
+   208→  const runGenerateDesc = useCallback(
+   209→    async (
+   210→      src: {
+   211→        name: string;
+   212→        categoryId: string;
+   213→        subcategoryId: string;
+   214→        type: "BUY_NOW" | "CUSTOM_ORDER";
+   215→        price: string;
+   216→        description: string;
+   217→      },
+   218→      variation: number
+   219→    ) => {
+   220→      setGeneratingDesc(true);
+   221→      try {
+   222→        // short existing text = the admin's notes → use as hints for the writer
+   223→        const notes = src.description.trim();
+   224→        const hints = notes.length > 0 && notes.length < 120 ? notes : undefined;
+   225→        const res = await adminGenerateDescription({
+   226→          name: src.name.trim(),
+   227→          categoryId: src.categoryId || null,
+   228→          subcategoryId: src.subcategoryId || null,
+   229→          type: src.type,
+   230→          price: src.price ? Number(src.price) : null,
+   231→          hints,
+   232→          variation,
+   233→        });
+   234→        setEditing((s) => (s ? { ...s, description: res.description } : s));
+   235→        setSeoInfo(res);
+   236→        if (res.method === "ai") {
+   237→          toast.success("AI wrote an SEO-optimized description", {
+   238→            description: `${res.wordCount} words · ${res.keywords.length} ranking keywords built in. Edit freely.`,
+   239→          });
+   240→        } else {
+   241→          toast.info("Description generated", {
+   242→            description: "AI was busy — an SEO template was used. Try Regenerate for a fresh AI draft.",
+   243→          });
+   244→        }
+   245→      } catch {
+   246→        toast.error("AI description failed", { description: "Write it manually or try again." });
+   247→      } finally {
+   248→        setGeneratingDesc(false);
+   249→      }
+   250→    },
+   251→    []
+   252→  );
+   253→
+   254→  // Auto-write the description for a NEW product once the name settles
+   255→  // (debounced 2.5s, only while empty, never after manual typing or a failed attempt)
+   256→  useEffect(() => {
+   257→    if (!editing || editing.id || descTouched.current || generatingDesc) return;
+   258→    const name = editing.name.trim();
+   259→    if (name.length < 6 || editing.description.trim()) return;
+   260→    if (name === lastGenKey.current) return;
+   261→    const t = setTimeout(() => {
+   262→      lastGenKey.current = name;
+   263→      void runGenerateDesc(
+   264→        {
+   265→          name,
+   266→          categoryId: editing.categoryId,
+   267→          subcategoryId: editing.subcategoryId,
+   268→          type: editing.type,
+   269→          price: editing.price,
+   270→          description: "",
+   271→        },
+   272→        1
+   273→      );
+   274→    }, 2500);
+   275→    return () => clearTimeout(t);
+   276→  }, [editing, generatingDesc, runGenerateDesc]);
+   277→
+   278→  const generateDescNow = () => {
+   279→    if (!editing || !editing.name.trim()) {
+   280→      toast.error("Type a product name first");
+   281→      return;
+   282→    }
+   283→    variationRef.current += 1;
+   284→    descTouched.current = false; // fresh AI text may replace what's there
+   285→    lastGenKey.current = editing.name.trim();
+   286→    setSeoInfo(null);
+   287→    void runGenerateDesc(
+   288→      {
+   289→        name: editing.name,
+   290→        categoryId: editing.categoryId,
+   291→        subcategoryId: editing.subcategoryId,
+   292→        type: editing.type,
+   293→        price: editing.price,
+   294→        description: editing.description,
+   295→      },
+   296→      variationRef.current
+   297→    );
+   298→  };
+   299→
+   300→  const openNew = () => {
+   301→    catTouched.current = false;
+   302→    lastDetectKey.current = "";
+   303→    setDetectedLabel(null);
+   304→    descTouched.current = false;
+   305→    lastGenKey.current = "";
+   306→    variationRef.current = 1;
+   307→    setSeoInfo(null);
+   308→    setEditing({ ...emptyProduct, categoryId: "" });
+   309→    setImgUrlInput("");
+   310→    setEditOpen(true);
+   311→  };
+   312→
+   313→  const openEdit = (p: Product) => {
+   314→    catTouched.current = true; // existing products: never override their category automatically
+   315→    lastDetectKey.current = "";
+   316→    setDetectedLabel(null);
+   317→    descTouched.current = true; // existing products: never auto-rewrite their description
+   318→    lastGenKey.current = "";
+   319→    variationRef.current = 1;
+   320→    setSeoInfo(null);
+   321→    setEditing({
+   322→      id: p.id,
+   323→      name: p.name,
+   324→      slug: p.slug,
+   325→      description: p.description,
+   326→      price: p.price === null ? "" : String(p.price),
+   327→      oldPrice: p.oldPrice === null ? "" : String(p.oldPrice),
+   328→      type: p.type,
+   329→      categoryId: p.categoryId,
+   330→      subcategoryId: p.subcategoryId ?? "",
+   331→      images: [...p.images],
+   332→      specs: p.specs.map((s) => ({ ...s })),
+   333→      options: p.options.map((o) => ({ ...o, values: [...o.values] })),
+   334→      badge: p.badge ?? "",
+   335→      stock: String(p.stock),
+   336→      featured: p.featured,
+   337→    });
+   338→    setImgUrlInput("");
+   339→    setEditOpen(true);
+   340→  };
+   341→
+   342→  const save = async () => {
+   343→    if (!editing) return;
+   344→    if (!editing.name.trim()) return toast.error("Product name is required");
+   345→    if (!editing.categoryId && editing.id) return toast.error("Select a category");
+   346→    if (!editing.description.trim()) return toast.error("Description is required");
+   347→    if (editing.type === "BUY_NOW" && !editing.price) return toast.error("Buy Now products need a price");
+   348→    if (editing.images.length === 0) return toast.error("Add at least one product image");
+   349→
+   350→    const slug = editing.slug.trim() || slugify(editing.name);
+   351→    if (!slug) return toast.error("Could not generate a slug from this name");
+   352→
+   353→    setSaving(true);
+   354→    try {
+   355→      await adminSaveProduct({
+   356→        id: editing.id,
+   357→        name: editing.name.trim(),
+   358→        slug,
+   359→        description: editing.description.trim(),
+   360→        price: editing.price ? Number(editing.price) : null,
+   361→        oldPrice: editing.oldPrice ? Number(editing.oldPrice) : null,
+   362→        type: editing.type,
+   363→        categoryId: editing.categoryId,
+   364→        subcategoryId: editing.subcategoryId || null,
+   365→        images: editing.images,
+   366→        specs: editing.specs.filter((s) => s.label && s.value),
+   367→        options: editing.options.filter((o) => o.label && o.values.filter(Boolean).length > 0),
+   368→        badge: editing.badge.trim() || null,
+   369→        stock: Number(editing.stock) || 0,
+   370→        featured: editing.featured,
+   371→      });
+   372→      toast.success(editing.id ? "Product updated" : "Product created");
+   373→      setEditOpen(false);
+   374→      await load();
+   375→    } catch (e) {
+   376→      toast.error("Save failed", { description: e instanceof Error ? e.message : "" });
+   377→    } finally {
+   378→      setSaving(false);
+   379→    }
+   380→  };
+   381→
+   382→  const handleUpload = async (files: File[]) => {
+   383→    if (files.length === 0) return;
+   384→    setUploadingImg(true);
+   385→    try {
+   386→      const { urls } = await uploadImages(files);
+   387→      setEditing((e) => (e ? { ...e, images: [...e.images, ...urls] } : e));
+   388→      toast.success(files.length === 1 ? "Image uploaded" : `${files.length} images uploaded`);
+   389→    } catch (e) {
+   390→      toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
+   391→    } finally {
+   392→      setUploadingImg(false);
+   393→    }
+   394→  };
+   395→
+   396→  return (
+   397→    <div className="space-y-5">
+   398→      <div className="flex flex-wrap items-center justify-between gap-3">
+   399→        <div>
+   400→          <h1 className="font-display text-2xl font-bold text-zinc-900">Products</h1>
+   401→          <p className="mt-1 text-sm text-zinc-500">{products.length} products in catalog</p>
+   402→        </div>
+   403→        <Button className="font-bold" onClick={openNew}>
+   404→          <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" /> Add Product
+   405→        </Button>
+   406→      </div>
+   407→
+   408→      {/* Search */}
+   409→      <div className="relative max-w-sm">
+   410→        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+   411→        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…" className="pl-9" />
+   412→      </div>
+   413→
+   414→      {/* Table */}
+   415→      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+   416→        <div className="overflow-x-auto">
+   417→          <table className="w-full min-w-[860px] text-sm">
+   418→            <thead>
+   419→              <tr className="border-b bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
+   420→                <th className="px-4 py-3 font-bold">Product</th>
+   421→                <th className="px-4 py-3 font-bold">Category</th>
+   422→                <th className="px-4 py-3 font-bold">Type</th>
+   423→                <th className="px-4 py-3 font-bold">Price</th>
+   424→                <th className="px-4 py-3 font-bold">Stock</th>
+   425→                <th className="px-4 py-3 font-bold">Featured</th>
+   426→                <th className="px-4 py-3 text-right font-bold">Actions</th>
+   427→              </tr>
+   428→            </thead>
+   429→            <tbody className="divide-y">
+   430→              {loading
+   431→                ? Array.from({ length: 6 }).map((_, i) => (
+   432→                    <tr key={i}>
+   433→                      <td colSpan={7} className="px-4 py-3">
+   434→                        <Skeleton className="h-10 w-full" />
+   435→                      </td>
+   436→                    </tr>
+   437→                  ))
+   438→                : filtered.map((p) => (
+   439→                    <tr key={p.id} className="hover:bg-zinc-50/60">
+   440→                      <td className="px-4 py-3">
+   441→                        <div className="flex items-center gap-3">
+   442→                          { }
+   443→                          <img src={p.images[0]} alt={p.name} className="h-11 w-11 rounded-lg border object-cover" />
+   444→                          <div className="min-w-0">
+   445→                            <button onClick={() => navigate(`/product/${p.slug}`)} className="line-clamp-1 text-left font-bold text-zinc-800 hover:text-primary">
+   446→                              {p.name}
+   447→                            </button>
+   448→                            <p className="font-mono text-xs text-zinc-400">{p.slug}</p>
+   449→                          </div>
+   450→                        </div>
+   451→                      </td>
+   452→                      <td className="px-4 py-3 text-zinc-600">{p.category?.name ?? "—"}</td>
+   453→                      <td className="px-4 py-3">
+   454→                        {p.type === "BUY_NOW" ? (
+   455→                          <Badge className="bg-primary text-primary-foreground hover:bg-primary">Buy Now</Badge>
+   456→                        ) : (
+   457→                          <Badge variant="secondary" className="border border-primary/40 bg-zinc-950 text-primary hover:bg-zinc-950">Custom</Badge>
+   458→                        )}
+   459→                      </td>
+   460→                      <td className="px-4 py-3 font-bold text-zinc-800">
+   461→                        {p.price === null ? <span className="text-zinc-400">Quote</span> : formatPKR(p.price)}
+   462→                      </td>
+   463→                      <td className="px-4 py-3 text-zinc-600">{p.type === "BUY_NOW" ? p.stock : "—"}</td>
+   464→                      <td className="px-4 py-3">
+   465→                        {p.featured ? <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" /> : <span className="text-zinc-300">—</span>}
+   466→                      </td>
+   467→                      <td className="px-4 py-3">
+   468→                        <div className="flex justify-end gap-1.5">
+   469→                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)} aria-label={`Edit ${p.name}`}>
+   470→                            <Pencil className="h-4 w-4" aria-hidden="true" />
+   471→                          </Button>
+   472→                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => setDeleteTarget(p)} aria-label={`Delete ${p.name}`}>
+   473→                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+   474→                          </Button>
+   475→                        </div>
+   476→                      </td>
+   477→                    </tr>
+   478→                  ))}
+   479→              {!loading && filtered.length === 0 && (
+   480→                <tr>
+   481→                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-400">
+   482→                    No products match “{search}”.
+   483→                  </td>
+   484→                </tr>
+   485→              )}
+   486→            </tbody>
+   487→          </table>
+   488→        </div>
+   489→      </div>
+   490→
+   491→      {/* ---------- Editor dialog ---------- */}
+   492→      <Dialog open={editOpen} onOpenChange={(o) => !o && setEditOpen(false)}>
+   493→        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto scrollbar-thin">
+   494→          {editing && (
+   495→            <>
+   496→              <DialogHeader>
+   497→                <DialogTitle>{editing.id ? "Edit Product" : "Add New Product"}</DialogTitle>
+   498→                <DialogDescription>
+   499→                  Buy Now items appear in the cart/checkout flow; Custom Order items use the quote flow.
+   500→                </DialogDescription>
+   501→              </DialogHeader>
+   502→
+   503→              <div className="grid gap-4 sm:grid-cols-2">
+   504→                <div className="space-y-1.5 sm:col-span-2">
+   505→                  <Label>Product Name *</Label>
+   506→                  <Input
+   507→                    value={editing.name}
+   508→                    onChange={(e) =>
+   509→                      setEditing((s) =>
+   510→                        s && !s.id ? { ...s, name: e.target.value, slug: slugify(e.target.value) } : { ...s, name: e.target.value }
+   511→                      )
+   512→                    }
+   513→                    placeholder="e.g. LED Edge-Lit Name Plate"
+   514→                  />
+   515→                </div>
+   516→                <div className="space-y-1.5">
+   517→                  <Label>Slug (URL)</Label>
+   518→                  <Input value={editing.slug} onChange={(e) => setEditing((s) => (s ? { ...s, slug: slugify(e.target.value) } : s))} placeholder="auto-generated" />
+   519→                </div>
+   520→                <div className="space-y-1.5">
+   521→                  <div className="flex items-center justify-between">
+   522→                    <Label>Category *</Label>
+   523→                    <div className="flex items-center gap-2">
+   524→                      {detecting && (
+   525→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   526→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Detecting…
+   527→                        </span>
+   528→                      )}
+   529→                      {!detecting && detectedLabel && !catTouched.current && !editing.id && (
+   530→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   531→                          <Sparkles className="h-3 w-3" aria-hidden="true" /> Auto-assigned
+   532→                        </span>
+   533→                      )}
+   534→                      <button
+   535→                        type="button"
+   536→                        onClick={detectNow}
+   537→                        disabled={detecting || !editing.name.trim()}
+   538→                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+   539→                      >
+   540→                        {detecting ? (
+   541→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+   542→                        ) : (
+   543→                          <Sparkles className="h-3 w-3" aria-hidden="true" />
+   544→                        )}
+   545→                        Detect
+   546→                      </button>
+   547→                    </div>
+   548→                  </div>
+   549→                  <Select
+   550→                    value={editing.categoryId}
+   551→                    onValueChange={(v) => {
+   552→                      catTouched.current = true;
+   553→                      setDetectedLabel(null);
+   554→                      setEditing((s) => (s ? { ...s, categoryId: v, subcategoryId: "" } : s));
+   555→                    }}
+   556→                  >
+   557→                    <SelectTrigger className="w-full">
+   558→                      <SelectValue placeholder="Auto-detected from name" />
+   559→                    </SelectTrigger>
+   560→                    <SelectContent>
+   561→                      {cats.map((c) => (
+   562→                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+   563→                      ))}
+   564→                    </SelectContent>
+   565→                  </Select>
+   566→                  <p className="text-xs text-zinc-400">
+   567→                    Auto-detected from the product name — pick manually only if needed.
+   568→                  </p>
+   569→                </div>
+   570→                <div className="space-y-1.5">
+   571→                  <Label>Subcategory</Label>
+   572→                  <Select
+   573→                    value={editing.subcategoryId || "none"}
+   574→                    onValueChange={(v) => setEditing((s) => (s ? { ...s, subcategoryId: v === "none" ? "" : v } : s))}
+   575→                    disabled={!editing.subcategoryId && (cats.find((c) => c.id === editing.categoryId)?.subcategories?.length ?? 0) === 0}
+   576→                  >
+   577→                    <SelectTrigger className="w-full"><SelectValue placeholder="Optional" /></SelectTrigger>
+   578→                    <SelectContent>
+   579→                      <SelectItem value="none">No subcategory</SelectItem>
+   580→                      {(cats.find((c) => c.id === editing.categoryId)?.subcategories ?? []).map((sub) => (
+   581→                        <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
+   582→                      ))}
+   583→                    </SelectContent>
+   584→                  </Select>
+   585→                  <p className="text-xs text-zinc-400">Auto-filled with the category — powers the Shop menu filters.</p>
+   586→                </div>
+   587→                <div className="space-y-1.5">
+   588→                  <Label>Type *</Label>
+   589→                  <Select value={editing.type} onValueChange={(v: "BUY_NOW" | "CUSTOM_ORDER") => setEditing((s) => (s ? { ...s, type: v } : s))}>
+   590→                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+   591→                    <SelectContent>
+   592→                      <SelectItem value="BUY_NOW">Buy Now (cart + checkout)</SelectItem>
+   593→                      <SelectItem value="CUSTOM_ORDER">Custom Order (quote only)</SelectItem>
+   594→                    </SelectContent>
+   595→                  </Select>
+   596→                </div>
+   597→                <div className="space-y-1.5">
+   598→                  <Label>Price (Rs) {editing.type === "CUSTOM_ORDER" && <span className="text-zinc-400">— blank for quote-based</span>}</Label>
+   599→                  <Input type="number" min={0} value={editing.price} onChange={(e) => setEditing((s) => (s ? { ...s, price: e.target.value } : s))} placeholder="e.g. 3500" />
+   600→                </div>
+   601→                <div className="space-y-1.5">
+   602→                  <Label>Old Price (Rs, optional)</Label>
+   603→                  <Input type="number" min={0} value={editing.oldPrice} onChange={(e) => setEditing((s) => (s ? { ...s, oldPrice: e.target.value } : s))} placeholder="e.g. 4200" />
+   604→                </div>
+   605→                <div className="space-y-1.5">
+   606→                  <Label>Stock {editing.type === "CUSTOM_ORDER" && "(unused)"}</Label>
+   607→                  <Input type="number" min={0} value={editing.stock} onChange={(e) => setEditing((s) => (s ? { ...s, stock: e.target.value } : s))} />
+   608→                </div>
+   609→                <div className="space-y-1.5">
+   610→                  <Label>Badge (e.g. Best Seller)</Label>
+   611→                  <Input value={editing.badge} onChange={(e) => setEditing((s) => (s ? { ...s, badge: e.target.value } : s))} placeholder="Best Seller, New…" />
+   612→                </div>
+   613→                <div className="space-y-1.5">
+   614→                  <Label>Featured on home page</Label>
+   615→                  <div className="flex h-10 items-center">
+   616→                    <Switch checked={editing.featured} onCheckedChange={(v) => setEditing((s) => (s ? { ...s, featured: v } : s))} aria-label="Featured" />
+   617→                  </div>
+   618→                </div>
+   619→                <div className="space-y-1.5 sm:col-span-2">
+   620→                  <div className="flex items-center justify-between">
+   621→                    <Label>Description *</Label>
+   622→                    <div className="flex items-center gap-2">
+   623→                      {generatingDesc && (
+   624→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   625→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Writing…
+   626→                        </span>
+   627→                      )}
+   628→                      {!generatingDesc && seoInfo?.method === "ai" && (
+   629→                        <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
+   630→                          <Sparkles className="h-3 w-3" aria-hidden="true" /> AI-written
+   631→                        </span>
+   632→                      )}
+   633→                      <button
+   634→                        type="button"
+   635→                        onClick={generateDescNow}
+   636→                        disabled={generatingDesc || !editing.name.trim()}
+   637→                        className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
+   638→                      >
+   639→                        {generatingDesc ? (
+   640→                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+   641→                        ) : (
+   642→                          <Wand2 className="h-3 w-3" aria-hidden="true" />
+   643→                        )}
+   644→                        {editing.description.trim() ? "Regenerate" : "Write with AI"}
+   645→                      </button>
+   646→                    </div>
+   647→                  </div>
+   648→                  <Textarea
+   649→                    rows={8}
+   650→                    value={editing.description}
+   651→                    onChange={(e) => {
+   652→                      descTouched.current = true;
+   653→                      setSeoInfo(null);
+   654→                      setEditing((s) => (s ? { ...s, description: e.target.value } : s));
+   655→                    }}
+   656→                    placeholder="AI writes this automatically from the product name — or type your own notes and hit Write with AI."
+   657→                  />
+   658→                  {seoInfo ? (
+   659→                    <p className="flex items-start gap-1 text-xs text-zinc-400">
+   660→                      <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+   661→                      <span>
+   662→                        SEO-ready: {seoInfo.wordCount} words · keywords: {seoInfo.keywords.slice(0, 4).join(", ")}
+   663→                        {seoInfo.keywords.length > 4 ? ` +${seoInfo.keywords.length - 4} more` : ""}
+   664→                      </span>
+   665→                    </p>
+   666→                  ) : (
+   667→                    <p className="text-xs text-zinc-400">
+   668→                      Auto-written from the product name with ranking keywords — edit freely.
+   669→                    </p>
+   670→                  )}
+   671→                </div>
+   672→
+   673→                {/* Images */}
+   674→                <div className="space-y-2 sm:col-span-2">
+   675→                  <Label>Images * (first image is the main one)</Label>
+   676→                  <div className="flex flex-wrap gap-3">
+   677→                    {editing.images.map((img, i) => (
+   678→                      <div key={i} className="group relative h-24 w-24 overflow-hidden rounded-lg border">
+   679→                        { }
+   680→                        <img src={img} alt={`Product image ${i + 1}`} className="h-full w-full object-cover" />
+   681→                        <button
+   682→                          onClick={() => setEditing((s) => (s ? { ...s, images: s.images.filter((_, j) => j !== i) } : s))}
+   683→                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+   684→                          aria-label="Remove image"
+   685→                        >
+   686→                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+   687→                        </button>
+   688→                        {i === 0 && (
+   689→                          <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">MAIN</span>
+   690→                        )}
+   691→                      </div>
+   692→                    ))}
+   693→                    <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed text-zinc-400 hover:border-primary/50 hover:text-primary">
+   694→                      {uploadingImg ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Upload className="h-5 w-5" aria-hidden="true" />}
+   695→                      <span className="text-[10px] font-semibold">{uploadingImg ? "Uploading…" : "Upload"}</span>
+   696→                      <input
+   697→                        type="file"
+   698→                        accept="image/png,image/jpeg,image/webp"
+   699→                        multiple
+   700→                        className="hidden"
+   701→                        onChange={(e) => {
+   702→                          const files = Array.from(e.target.files ?? []);
+   703→                          if (files.length > 0) void handleUpload(files);
+   704→                          e.target.value = "";
+   705→                        }}
+   706→                      />
+   707→                    </label>
+   708→                  </div>
+   709→                  <div className="flex gap-2">
+   710→                    <Input value={imgUrlInput} onChange={(e) => setImgUrlInput(e.target.value)} placeholder="…or paste image URL (e.g. /images/p-example.png)" />
+   711→                    <Button
+   712→                      type="button"
+   713→                      variant="outline"
+   714→                      onClick={() => {
+   715→                        if (!imgUrlInput.trim()) return;
+   716→                        setEditing((s) => (s ? { ...s, images: [...s.images, imgUrlInput.trim()] } : s));
+   717→                        setImgUrlInput("");
+   718→                      }}
+   719→                    >
+   720→                      Add URL
+   721→                    </Button>
+   722→                  </div>
+   723→                </div>
+   724→
+   725→                {/* Specs editor */}
+   726→                <div className="space-y-2 sm:col-span-2">
+   727→                  <Label>Specifications</Label>
+   728→                  {editing.specs.map((spec, i) => (
+   729→                    <div key={i} className="flex gap-2">
+   730→                      <Input placeholder="Label (e.g. Material)" value={spec.label} onChange={(e) => setEditing((s) => s ? { ...s, specs: s.specs.map((sp, j) => j === i ? { ...sp, label: e.target.value } : sp) } : s)} />
+   731→                      <Input placeholder="Value (e.g. 8mm acrylic)" value={spec.value} onChange={(e) => setEditing((s) => s ? { ...s, specs: s.specs.map((sp, j) => j === i ? { ...sp, value: e.target.value } : sp) } : s)} />
+   732→                      <Button type="button" variant="ghost" size="icon" onClick={() => setEditing((s) => s ? { ...s, specs: s.specs.filter((_, j) => j !== i) } : s)} aria-label="Remove spec">
+   733→                        <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
+   734→                      </Button>
+   735→                    </div>
+   736→                  ))}
+   737→                  <Button type="button" variant="outline" size="sm" onClick={() => setEditing((s) => s ? { ...s, specs: [...s.specs, { label: "", value: "" }] } : s)}>
+   738→                    <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Add Spec
+   739→                  </Button>
+   740→                </div>
+   741→
+   742→                {/* Options editor */}
+   743→                <div className="space-y-2 sm:col-span-2">
+   744→                  <Label>Options (size / color choices)</Label>
+   745→                  {editing.options.map((opt, i) => (
+   746→                    <div key={i} className="space-y-1.5 rounded-lg border p-3">
+   747→                      <div className="flex gap-2">
+   748→                        <Input placeholder="Option label (e.g. Size)" value={opt.label} onChange={(e) => setEditing((s) => s ? { ...s, options: s.options.map((o, j) => j === i ? { ...o, label: e.target.value } : o) } : s)} />
+   749→                        <Button type="button" variant="ghost" size="icon" onClick={() => setEditing((s) => s ? { ...s, options: s.options.filter((_, j) => j !== i) } : s)} aria-label="Remove option">
+   750→                          <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
+   751→                        </Button>
+   752→                      </div>
+   753→                      <Input
+   754→                        placeholder="Values, comma-separated (e.g. Small, Medium, Large)"
+   755→                        value={opt.values.join(", ")}
+   756→                        onChange={(e) =>
+   757→                          setEditing((s) =>
+   758→                            s
+   759→                              ? {
+   760→                                  ...s,
+   761→                                  options: s.options.map((o, j) =>
+   762→                                    j === i ? { ...o, values: e.target.value.split(",").map((v) => v.trim()).filter(Boolean) } : o
+   763→                                  ),
+   764→                                }
+   765→                              : s
+   766→                          )
+   767→                        }
+   768→                      />
+   769→                    </div>
+   770→                  ))}
+   771→                  <Button type="button" variant="outline" size="sm" onClick={() => setEditing((s) => s ? { ...s, options: [...s.options, { label: "", values: [] }] } : s)}>
+   772→                    <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Add Option
+   773→                  </Button>
+   774→                </div>
+   775→              </div>
+   776→
+   777→              <div className="mt-2 flex justify-end gap-3 border-t pt-4">
+   778→                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+   779→                <Button onClick={save} disabled={saving}>
+   780→                  {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+   781→                  {editing.id ? "Save Changes" : "Create Product"}
+   782→                </Button>
+   783→              </div>
+   784→            </>
+   785→          )}
+   786→        </DialogContent>
+   787→      </Dialog>
+   788→
+   789→      {/* ---------- Delete confirm ---------- */}
+   790→      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+   791→        <AlertDialogContent>
+   792→          <AlertDialogHeader>
+   793→            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+   794→            <AlertDialogDescription>
+   795→              “{deleteTarget?.name}” will be permanently removed from the shop. This cannot be undone.
+   796→            </AlertDialogDescription>
+   797→          </AlertDialogHeader>
+   798→          <AlertDialogFooter>
+   799→            <AlertDialogCancel>Cancel</AlertDialogCancel>
+   800→            <AlertDialogAction
+   801→              className="bg-red-600 hover:bg-red-700"
+   802→              onClick={async () => {
+   803→                if (!deleteTarget) return;
+   804→                try {
+   805→                  await adminDeleteProduct(deleteTarget.id);
+   806→                  toast.success("Product deleted");
+   807→                  setProducts((ps) => ps.filter((p) => p.id !== deleteTarget.id));
+   808→                } catch {
+   809→                  toast.error("Delete failed");
+   810→                } finally {
+   811→                  setDeleteTarget(null);
+   812→                }
+   813→              }}
+   814→            >
+   815→              Delete
+   816→            </AlertDialogAction>
+   817→          </AlertDialogFooter>
+   818→        </AlertDialogContent>
+   819→      </AlertDialog>
+   820→    </div>
+   821→  );
+   822→}
+   823→

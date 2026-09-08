@@ -1,4 +1,4 @@
-export type ProductType = "BUY_NOW" | "CUSTOM_ORDER";
+export type ProductType = "BUY_NOW" | "CUSTOM_ORDER" | "BOTH";
 
 export type ProductSpec = { label: string; value: string };
 export type ProductOption = { label: string; values: string[] };
