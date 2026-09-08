@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/site/section-heading";
 import { QuoteForm } from "@/components/site/quote-form";
 import { useRoute } from "@/lib/router";
-import { SERVICES, getService, PORTFOLIO } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
+import { MediaImg } from "@/components/site/media-img";
 import { Badge } from "@/components/ui/badge";
 
 /* ---------- Services overview page (#/services) ---------- */
 export function ServicesIndexView() {
   const { navigate } = useRoute();
+  const { services: SERVICES } = useContent();
   return (
     <div>
       <div className="relative overflow-hidden bg-zinc-950 py-16 lg:py-20">
@@ -43,7 +45,7 @@ export function ServicesIndexView() {
             >
               <div className="aspect-[16/9] overflow-hidden bg-zinc-100">
                 { }
-                <img src={s.hero} alt={s.name} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                <MediaImg src={s.hero} alt={s.name} className="h-full w-full object-cover img-zoom" />
               </div>
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="font-display text-lg font-bold text-zinc-900 group-hover:text-primary">{s.name}</h3>
@@ -72,7 +74,8 @@ export function ServicesIndexView() {
 /* ---------- Single service category page (#/services/:slug) ---------- */
 export function ServiceCategoryView({ slug }: { slug: string }) {
   const { navigate } = useRoute();
-  const service = getService(slug);
+  const { services, portfolio: PORTFOLIO } = useContent();
+  const service = services.find((s) => s.slug === slug);
 
   if (!service) {
     return (
@@ -92,7 +95,9 @@ export function ServiceCategoryView({ slug }: { slug: string }) {
       {/* Hero banner */}
       <section className="relative overflow-hidden bg-zinc-950 py-14 lg:py-20">
         { }
-        <img src={service.hero} alt={`${service.name} by Madni Advertiser`} className="absolute inset-0 h-full w-full object-cover opacity-35" />
+        {service.hero ? (
+          <img src={service.hero} alt={`${service.name} by Madni Advertiser`} className="absolute inset-0 h-full w-full object-cover opacity-35" />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" aria-hidden="true" />
         <div className="container-site relative">
           <nav className="mb-4 text-sm text-zinc-400" aria-label="Breadcrumb">
@@ -134,7 +139,7 @@ export function ServiceCategoryView({ slug }: { slug: string }) {
               <div key={sub.name} className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-lg">
                 <div className="aspect-[16/10] overflow-hidden bg-zinc-100">
                   { }
-                  <img src={sub.image} alt={sub.name} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                  <MediaImg src={sub.image} alt={sub.name} className="h-full w-full object-cover img-zoom" />
                 </div>
                 <div className="p-5">
                   <h3 className="font-display text-lg font-bold text-zinc-900">{sub.name}</h3>
@@ -161,7 +166,7 @@ export function ServiceCategoryView({ slug }: { slug: string }) {
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
                     { }
-                    <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                    <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" aria-hidden="true" />
                   <div className="absolute inset-x-0 bottom-0 p-3">

@@ -494,3 +494,23 @@ Work Log:
 Stage Summary:
 - Mobile menu now mirrors the website navbar: every navbar option visible with Services, Shop and Portfolio each having their own dropdown (thumbnails, sub-links, case studies) — mobile friendly with one-dropdown-at-a-time accordions and gold active-state on the current section
 - The merged "Explore" option is gone
+
+---
+Task ID: 26-admin-dialog-width
+Agent: Z.ai Code (main agent)
+Task: User: the Add Product / Add Client description panels in the admin panel looked congested — make them wider
+
+Work Log:
+- Root cause found: the base DialogContent (src/components/ui/dialog.tsx) ships `sm:max-w-lg`, and twMerge only strips same-variant classes — so the unprefixed `max-w-*` widths passed by the admin dialogs never beat `sm:max-w-lg` at ≥640px. ALL admin dialogs were effectively stuck at 512px on desktop (and edge-to-edge full-bleed on mobile, since the base `max-w-[calc(100%-2rem)]` mobile cap was also stripped)
+- Fix pattern: pass `sm:max-w-*` (same variant as the base class) so twMerge properly replaces it, and keep the mobile margin cap intact
+- admin-products.tsx editor dialog: `max-w-3xl` → `w-[calc(100%-2rem)] sm:max-w-5xl` → now 1024px on desktop; description textarea ~974px (was ~440px)
+- admin-clients.tsx project dialog: `max-w-lg` → `sm:max-w-3xl` → 768px; restructured fields into a `grid gap-4 sm:grid-cols-3` — Project Title (col-span-2) + Year side by side, description full width below
+- admin-clients.tsx client dialog: `max-w-md` → `sm:max-w-2xl` → 672px
+- admin-orders.tsx + admin-quotes.tsx detail dialogs: same bug, `max-w-2xl` → `sm:max-w-3xl` → 768px
+- Drive-by fix found during mobile verification: the Clients tab cards (grid items with implicit auto track) had min-content blowout from non-wrapping project titles → 445px horizontal overflow on 390px phones; fixed with `min-w-0` on the card section
+- Fixed a dangling empty div introduced during the MultiEdit restructure of the project dialog (JSX balance restored)
+
+Stage Summary:
+- All admin dialogs are now actually wide on desktop: product editor 1024px, project 768px, client 672px, orders/quotes 768px — description textareas span nearly the full dialog width instead of ~440px
+- Mobile keeps clean 16px side margins (no more full-bleed dialogs) and the Clients tab no longer overflows horizontally
+- Verified in browser: measured all 5 dialog widths on 1440×900 desktop + 390×844 mobile (358px dialog, 16px margins each side, no horizontal scroll); "Write with AI" auto-generated a 1308-char description inside the wider panel (POST /api/admin/generate-description 200); VLM confirmed both product and project dialogs look spacious with comfortable breathing room and title/year side by side; fresh reload = 0 console errors (only the known Radix useId HMR artifact appears in HMR-patched sessions); bun run lint 0 errors

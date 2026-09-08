@@ -6,6 +6,7 @@
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, useRoute } from "@/lib/router";
+import { ContentProvider } from "@/lib/content";
 import { Header } from "@/components/site/header";
 import { Footer } from "@/components/site/footer";
 import { WhatsAppButton } from "@/components/site/whatsapp-button";
@@ -87,9 +88,11 @@ function NotFoundView() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider>
-        <RouteSwitch />
-      </RouterProvider>
+      <ContentProvider>
+        <RouterProvider>
+          <RouteSwitch />
+        </RouterProvider>
+      </ContentProvider>
     </QueryClientProvider>
   );
 }

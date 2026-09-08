@@ -4,11 +4,14 @@
  * Admin panel — login-protected in-site management area.
  * Access via #/admin. Default demo credentials: admin / madni123
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { io } from "socket.io-client";
 import {
   BadgeDollarSign,
+  Briefcase,
   Building2,
+  Images,
   LayoutDashboard,
   Loader2,
   Lock,
@@ -38,9 +41,23 @@ import { AdminProducts } from "./admin-products";
 import { AdminOrders } from "./admin-orders";
 import { AdminQuotes } from "./admin-quotes";
 import { AdminClients } from "./admin-clients";
+import { AdminServices } from "./admin-services";
+import { AdminPortfolio } from "./admin-portfolio";
 import type { Order, QuoteRequest } from "@/lib/types";
 
-type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients";
+type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients" | "services" | "portfolio";
+
+type NewOrderEvent = {
+  orderNumber: string;
+  customerName: string;
+  phone?: string;
+  city?: string;
+  subtotal?: number;
+  paymentMethod?: string;
+  itemCount?: number;
+  firstItem?: string;
+  at?: string;
+};
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -48,6 +65,8 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "orders", label: "Orders", icon: ReceiptText },
   { id: "quotes", label: "Quote Requests", icon: ClipboardList },
   { id: "clients", label: "Clients", icon: Building2 },
+  { id: "services", label: "Services", icon: Briefcase },
+  { id: "portfolio", label: "Portfolio", icon: Images },
 ];
 
 export function AdminView() {
@@ -79,6 +98,44 @@ export function AdminView() {
     // data fetch on auth change — setState happens async after await
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (authState === "panel") refresh();
+  }, [authState, refresh]);
+
+  /* ---------- Live order notifications (socket.io via gateway) ---------- */
+  const seenOrders = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (authState !== "panel") return;
+    // Never use a port in the URL — the gateway reads XTransformPort
+    const socket = io("/?XTransformPort=3003", {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelay: 2000,
+      reconnectionAttempts: 20,
+      timeout: 10000,
+    });
+    socket.on("new-order", (o: NewOrderEvent) => {
+      if (!o?.orderNumber || seenOrders.current.has(o.orderNumber)) return;
+      seenOrders.current.add(o.orderNumber);
+      toast.success(`New order — ${o.orderNumber}`, {
+        description: [
+          o.customerName,
+          o.city,
+          o.subtotal !== undefined ? formatPKR(o.subtotal) : undefined,
+          o.itemCount ? `${o.itemCount} item${o.itemCount === 1 ? "" : "s"}` : undefined,
+          o.firstItem,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        duration: 15000,
+        action: {
+          label: "View Order",
+          onClick: () => setTab("orders"),
+        },
+      });
+      void refresh(); // dashboard stats + orders list update instantly
+    });
+    return () => {
+      socket.disconnect();
+    };
   }, [authState, refresh]);
 
   if (authState === "checking") {
@@ -180,6 +237,8 @@ export function AdminView() {
           {tab === "orders" && <AdminOrders orders={orders} refresh={refresh} />}
           {tab === "quotes" && <AdminQuotes quotes={quotes} refresh={refresh} />}
           {tab === "clients" && <AdminClients />}
+          {tab === "services" && <AdminServices />}
+          {tab === "portfolio" && <AdminPortfolio />}
         </main>
       </div>
     </div>

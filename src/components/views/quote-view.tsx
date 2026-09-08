@@ -4,11 +4,12 @@ import { PhoneCall, Zap } from "lucide-react";
 import { QuoteForm } from "@/components/site/quote-form";
 import { useRoute } from "@/lib/router";
 import { SITE } from "@/lib/constants";
-import { SERVICES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
 import { WhatsAppIcon } from "@/components/site/icons";
 
 export function QuoteView() {
   const { route } = useRoute();
+  const { services: SERVICES } = useContent();
   const preselect = route.query.service ?? undefined;
   const product = route.query.product ?? undefined;
 

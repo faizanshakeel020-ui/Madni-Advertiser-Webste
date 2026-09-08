@@ -20,14 +20,8 @@ import {
 } from "@/components/ui/select";
 import { WhatsAppIcon } from "./icons";
 import { SITE, whatsappUrl } from "@/lib/constants";
-import { SERVICES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
 import { createQuote, uploadImage } from "@/lib/api";
-
-const SERVICE_OPTIONS = [
-  ...SERVICES.map((s) => s.name),
-  "Custom / Other Project",
-  "General Inquiry",
-];
 
 export function QuoteForm({
   defaultService,
@@ -50,6 +44,12 @@ export function QuoteForm({
     details: productName ? `Project: ${productName}\n\n` : "",
     city: "Lahore",
   });
+  const { services } = useContent();
+  const SERVICE_OPTIONS = [
+    ...services.map((s) => s.name),
+    "Custom / Other Project",
+    "General Inquiry",
+  ];
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

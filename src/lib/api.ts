@@ -11,6 +11,7 @@ import type {
   Product,
   ProductListResponse,
   QuoteRequest,
+  ServiceSub,
 } from "./types";
 
 async function jsonFetch<T>(input: string, init?: RequestInit): Promise<T> {
@@ -279,6 +280,132 @@ export async function adminGenerateDescription(data: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+}
+
+// ---------- Admin: services & portfolio (site content) ----------
+
+export type AdminServicePayload = {
+  id?: string;
+  name: string;
+  slug?: string;
+  shortName?: string;
+  tagline?: string;
+  description?: string;
+  hero?: string;
+  icon?: string;
+  subServices?: { name: string; description: string; image: string }[];
+  projectTags?: string[];
+  sortOrder?: number;
+};
+
+export async function adminFetchServices(): Promise<
+  (AdminServicePayload & { id: string; slug: string; sortOrder: number })[]
+> {
+  return jsonFetch("/api/admin/services");
+}
+
+export async function adminSaveService(data: AdminServicePayload) {
+  return jsonFetch(data.id ? `/api/admin/services/${data.id}` : "/api/admin/services", {
+    method: data.id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteService(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/services/${id}`, { method: "DELETE" });
+}
+
+// ---------- Admin: service sub-services (nested under a service, like client projects) ----------
+
+export type AdminServiceSubPayload = {
+  name: string;
+  description: string;
+  image: string;
+};
+
+export async function adminAddServiceSub(
+  serviceId: string,
+  sub: AdminServiceSubPayload
+): Promise<{ ok: boolean; subServices: ServiceSub[] }> {
+  return jsonFetch(`/api/admin/services/${serviceId}/subservices`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sub),
+  });
+}
+
+export async function adminUpdateServiceSub(
+  serviceId: string,
+  index: number,
+  sub: AdminServiceSubPayload
+): Promise<{ ok: boolean; subServices: ServiceSub[] }> {
+  return jsonFetch(`/api/admin/services/${serviceId}/subservices`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ index, ...sub }),
+  });
+}
+
+export async function adminDeleteServiceSub(
+  serviceId: string,
+  index: number
+): Promise<{ ok: boolean }> {
+  return jsonFetch(
+    `/api/admin/services/${serviceId}/subservices?index=${index}`,
+    { method: "DELETE" }
+  );
+}
+
+export type AdminPortfolioPayload = {
+  id?: string;
+  title: string;
+  client?: string;
+  city?: string;
+  category?: string;
+  image?: string;
+  description?: string;
+  sortOrder?: number;
+};
+
+export async function adminFetchPortfolio(): Promise<
+  (AdminPortfolioPayload & { id: string; sortOrder: number })[]
+> {
+  return jsonFetch("/api/admin/portfolio");
+}
+
+export async function adminSavePortfolioItem(data: AdminPortfolioPayload) {
+  return jsonFetch(data.id ? `/api/admin/portfolio/${data.id}` : "/api/admin/portfolio", {
+    method: data.id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeletePortfolioItem(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/portfolio/${id}`, { method: "DELETE" });
+}
+
+// ---------- Admin: portfolio categories (group projects like client cards) ----------
+
+export async function adminRenamePortfolioCategory(
+  category: string,
+  name: string
+): Promise<{ ok: boolean; updated: number }> {
+  return jsonFetch("/api/admin/portfolio/category", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category, name }),
+  });
+}
+
+export async function adminDeletePortfolioCategory(
+  category: string
+): Promise<{ ok: boolean; deleted: number }> {
+  return jsonFetch(
+    `/api/admin/portfolio/category?category=${encodeURIComponent(category)}`,
+    { method: "DELETE" }
+  );
 }
 
 export async function adminFetchOrders(): Promise<Order[]> {

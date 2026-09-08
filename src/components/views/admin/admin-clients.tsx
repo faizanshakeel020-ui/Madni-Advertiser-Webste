@@ -325,7 +325,7 @@ export function AdminClients() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {clients.map((c) => (
-            <section key={c.id} className="rounded-2xl border bg-white shadow-sm">
+            <section key={c.id} className="min-w-0 rounded-2xl border bg-white shadow-sm">
               {/* header: round logo + name */}
               <div className="flex items-center gap-3 border-b p-4">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-200 bg-white">
@@ -410,7 +410,7 @@ export function AdminClients() {
 
       {/* ---------- Client dialog ---------- */}
       <Dialog open={clientOpen} onOpenChange={(o) => !o && setClientOpen(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           {clientEdit && (
             <>
               <DialogHeader>
@@ -499,7 +499,7 @@ export function AdminClients() {
 
       {/* ---------- Project dialog ---------- */}
       <Dialog open={projectOpen} onOpenChange={(o) => !o && setProjectOpen(false)}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto scrollbar-thin">
           {projectEdit && (
             <>
               <DialogHeader>
@@ -585,13 +585,26 @@ export function AdminClients() {
                     </p>
                   )}
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Project Title *</Label>
-                  <Input
-                    value={projectEdit.title}
-                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, title: e.target.value } : s))}
-                    placeholder="e.g. Illuminated Storefront & Brand Sign"
-                  />
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>Project Title *</Label>
+                    <Input
+                      value={projectEdit.title}
+                      onChange={(e) => setProjectEdit((s) => (s ? { ...s, title: e.target.value } : s))}
+                      placeholder="e.g. Illuminated Storefront & Brand Sign"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Year</Label>
+                    <Input
+                      type="number"
+                      min={1900}
+                      max={2200}
+                      value={projectEdit.year}
+                      onChange={(e) => setProjectEdit((s) => (s ? { ...s, year: e.target.value } : s))}
+                      placeholder={String(new Date().getFullYear())}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -645,17 +658,6 @@ export function AdminClients() {
                       Auto-written as a long, ranking-focused case study — edit freely.
                     </p>
                   )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Year</Label>
-                  <Input
-                    type="number"
-                    min={1900}
-                    max={2200}
-                    value={projectEdit.year}
-                    onChange={(e) => setProjectEdit((s) => (s ? { ...s, year: e.target.value } : s))}
-                    placeholder={String(new Date().getFullYear())}
-                  />
                 </div>
               </div>
               <div className="mt-2 flex justify-end gap-2">

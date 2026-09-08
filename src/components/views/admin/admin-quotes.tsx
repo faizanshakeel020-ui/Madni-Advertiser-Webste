@@ -134,7 +134,7 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
 
       {/* Detail dialog */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto scrollbar-thin">
           {detail && (
             <>
               <DialogHeader>

@@ -496,7 +496,7 @@ export function AdminProducts() {
 
       {/* ---------- Editor dialog ---------- */}
       <Dialog open={editOpen} onOpenChange={(o) => !o && setEditOpen(false)}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] sm:max-w-5xl overflow-y-auto scrollbar-thin">
           {editing && (
             <>
               <DialogHeader>

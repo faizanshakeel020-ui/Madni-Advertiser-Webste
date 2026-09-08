@@ -20,7 +20,8 @@ import {
 import { Logo } from "./logo";
 import { WhatsAppIcon } from "./icons";
 import { NAV_LINKS, SITE, whatsappUrl } from "@/lib/constants";
-import { PORTFOLIO_CATEGORIES, SERVICES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
+import { MediaImg } from "@/components/site/media-img";
 import { useRoute } from "@/lib/router";
 import { useCart, cartCount } from "@/store/cart";
 import { useMounted } from "@/lib/use-mounted";
@@ -32,6 +33,7 @@ type Menu = "services" | "shop" | "portfolio" | null;
 
 export function Header() {
   const { route, navigate } = useRoute();
+  const { services: SERVICES, portfolioCategories: PORTFOLIO_CATEGORIES } = useContent();
   const [openMenu, setOpenMenu] = useState<Menu>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cats, setCats] = useState<Category[]>([]);
@@ -190,11 +192,10 @@ export function Header() {
                                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-100"
                               >
                                 <span className="h-8 w-8 shrink-0 overflow-hidden rounded-md">
-                                  <img
+                                  <MediaImg
                                     src={s.hero}
                                     alt=""
                                     className="h-full w-full object-cover"
-                                    loading="lazy"
                                   />
                                 </span>
                                 <span className="flex-1">{s.name}</span>
@@ -208,11 +209,10 @@ export function Header() {
                                     className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] text-zinc-500 hover:text-primary"
                                   >
                                     <span className="h-5 w-5 shrink-0 overflow-hidden rounded-sm border border-zinc-200">
-                                      <img
+                                      <MediaImg
                                         src={sub.image}
                                         alt=""
                                         className="h-full w-full object-cover"
-                                        loading="lazy"
                                       />
                                     </span>
                                     <span className="flex-1 truncate">{sub.name}</span>
@@ -491,11 +491,10 @@ export function Header() {
                             active ? "border-primary/60" : "border-zinc-200"
                           }`}
                         >
-                          <img
+                          <MediaImg
                             src={s.hero}
                             alt=""
                             className="h-full w-full object-cover"
-                            loading="lazy"
                           />
                         </span>
                         <span className="min-w-0 flex-1 truncate text-sm font-bold">{s.name}</span>
@@ -534,11 +533,10 @@ export function Header() {
                             className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-left transition-colors hover:border-primary/60 hover:bg-accent"
                           >
                             <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-100">
-                              <img
+                              <MediaImg
                                 src={sub.image}
                                 alt=""
                                 className="h-full w-full object-cover"
-                                loading="lazy"
                               />
                             </span>
                             <span className="min-w-0 flex-1">
@@ -562,7 +560,7 @@ export function Header() {
                 </div>
 
                 {/* Right — active service promo image */}
-                {activeService && (
+                {activeService?.hero && (
                   <button
                     onClick={() => navigate(`/services/${activeService.slug}`)}
                     className="group relative w-[190px] shrink-0 overflow-hidden rounded-xl text-left"

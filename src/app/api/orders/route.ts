@@ -124,9 +124,37 @@ export async function POST(req: NextRequest) {
         .catch(() => {});
     }
 
+    // live notification → admin panel popup (best-effort, never blocks the order)
+    void notifyAdminPanel({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      phone: order.phone,
+      city: order.city,
+      subtotal,
+      paymentMethod,
+      itemCount: validatedItems.reduce((n, i) => n + i.qty, 0),
+      firstItem: validatedItems[0]?.name ?? "",
+      at: new Date().toISOString(),
+    });
+
     return NextResponse.json({ orderNumber: order.orderNumber }, { status: 201 });
   } catch (e) {
     console.error("orders POST error", e);
     return NextResponse.json({ error: "Could not place order" }, { status: 500 });
+  }
+}
+
+/** POST the new order to the order-notify mini-service (socket.io broadcast to the admin panel). */
+async function notifyAdminPanel(payload: Record<string, unknown>) {
+  try {
+    await fetch("http://localhost:3005/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    // notification service offline — the order itself is already saved
+    console.warn("order-notify service unreachable — skipping admin popup");
   }
 }

@@ -5,7 +5,7 @@ import { Clock, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } fr
 import { Button } from "@/components/ui/button";
 import { WhatsAppIcon } from "./icons";
 import { SITE, whatsappUrl } from "@/lib/constants";
-import { SERVICES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
 import { useRoute } from "@/lib/router";
 import { useCart } from "@/store/cart";
 import { fetchCategories } from "@/lib/api";
@@ -14,6 +14,7 @@ import type { Category } from "@/lib/types";
 
 export function Footer() {
   const { navigate } = useRoute();
+  const { services: SERVICES } = useContent();
   const [cats, setCats] = useState<Category[]>([]);
   const items = useCart((s) => s.items);
 

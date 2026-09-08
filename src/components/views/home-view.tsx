@@ -26,7 +26,8 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { ProductCard } from "@/components/site/product-card";
 import { useRoute } from "@/lib/router";
 import { fetchCategories, fetchClients, fetchProducts } from "@/lib/api";
-import { PORTFOLIO, SERVICES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
+import { MediaImg } from "@/components/site/media-img";
 import { SITE } from "@/lib/constants";
 import type { Category, Client, Product } from "@/lib/types";
 
@@ -56,6 +57,7 @@ const SLIDES = [
 
 export function HomeView() {
   const { navigate } = useRoute();
+  const { services: SERVICES, portfolio: PORTFOLIO } = useContent();
   const [emblaRef, embla] = useEmblaCarousel({ loop: true, duration: 25 });
   const [selected, setSelected] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -394,7 +396,7 @@ export function HomeView() {
               >
                 <div className="aspect-[16/10] w-full overflow-hidden bg-zinc-100">
                   { }
-                  <img src={s.hero} alt={`${s.name} service`} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                  <MediaImg src={s.hero} alt={`${s.name} service`} className="h-full w-full object-cover img-zoom" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/35 to-transparent" aria-hidden="true" />
                 <div className="absolute inset-x-0 bottom-0 p-5">
@@ -496,7 +498,7 @@ export function HomeView() {
               >
                 <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-100">
                   { }
-                  <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                  <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-90" aria-hidden="true" />
                 <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">

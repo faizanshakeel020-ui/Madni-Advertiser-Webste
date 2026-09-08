@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SectionHeading } from "@/components/site/section-heading";
 import { useRoute } from "@/lib/router";
-import { PORTFOLIO, PORTFOLIO_CATEGORIES } from "@/lib/services-data";
+import { useContent } from "@/lib/content";
+import { MediaImg } from "@/components/site/media-img";
 import type { PortfolioProject } from "@/lib/types";
 
 export function PortfolioView() {
   const { route, navigate } = useRoute();
+  const { portfolio: PORTFOLIO, portfolioCategories: PORTFOLIO_CATEGORIES } = useContent();
   const filter = route.query.cat ?? "All";
   const [lightbox, setLightbox] = useState<PortfolioProject | null>(null);
 
@@ -72,7 +74,7 @@ export function PortfolioView() {
             >
               <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
                 { }
-                <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover img-zoom" />
+                <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent" aria-hidden="true" />
               <div className="absolute left-3 top-3">
@@ -118,7 +120,7 @@ export function PortfolioView() {
                 {lightbox.description} — {lightbox.client}, {lightbox.city}
               </DialogDescription>
               { }
-              <img src={lightbox.image} alt={lightbox.title} className="max-h-[60vh] w-full rounded-t-xl object-cover" />
+              <MediaImg src={lightbox.image} alt={lightbox.title} loading="eager" className="max-h-[60vh] w-full rounded-t-xl object-cover" />
               <div className="relative p-5 text-white">
                 <button
                   onClick={() => setLightbox(null)}

@@ -143,3 +143,34 @@ model ClientProject {
   client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 }
+
+// ---- Service pillars (Services page, mega menu, home, quote form) ----
+model Service {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  shortName   String   @default("")
+  tagline     String   @default("")
+  description String   @default("")
+  hero        String   @default("") // hero image path
+  icon        String   @default("building")
+  subServices String   @default("[]") // JSON array of {name, description, image}
+  projectTags String   @default("[]") // JSON array of portfolio category names
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ---- Portfolio gallery items (Portfolio page, home Recent Projects) ----
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  title       String
+  client      String   @default("")
+  city        String   @default("")
+  category    String   @default("Other")
+  image       String   @default("")
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
