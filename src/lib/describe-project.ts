@@ -29,6 +29,8 @@ export type ProjectDescribeInput = {
   otherProjectTitles?: string[];
   /** Free-form hints the admin typed (materials, size, location…). */
   hints?: string | null;
+  /** First project image, used by the vision model to ground the description. */
+  imageUrl?: string | null;
   /** Increment for a different angle on regenerate. */
   variation?: number;
 };
@@ -96,7 +98,10 @@ async function aiDescribeProject(input: ProjectDescribeInput): Promise<AiResult 
     "5. After the paragraphs, add up to 6 short bullet lines starting with '• ' listing deliverables/materials (each on its own line).",
     "6. Plain text only: no markdown headings, no bold, no links, no emojis, no ALL-CAPS shouting.",
     `7. Mention ${BRAND} and ${CITY} naturally 2-3 times, never in every paragraph.`,
-    "8. Also produce a metaTitle (max 60 chars, contains project title + client name), a metaDescription (140-160 chars, contains client name, the word signage, a location keyword and a call to action), and 6-8 lowercase keywords/search phrases people actually type.",
+    input.imageUrl
+      ? "8. The attached image is the primary visual reference: describe the visible sign type, shapes, colors, layout, lighting appearance, facade or setting, and branding details. Keep those observations central to the opening and result; never claim an exact material, measurement, specification, or readable word unless the brief confirms it."
+      : "8. Use only details confirmed by the project brief; do not invent exact materials, measurements, specifications, or branding details.",
+    "9. Also produce a metaTitle (max 60 chars, contains project title + client name), a metaDescription (140-160 chars, contains client name, the word signage, a location keyword and a call to action), and 6-8 lowercase keywords/search phrases people actually type.",
     "Respond ONLY with minified JSON in exactly this format:",
     '{"description":"...","metaTitle":"...","metaDescription":"...","keywords":["..."]}',
     "No markdown, no code fences, no explanations.",
@@ -120,13 +125,27 @@ async function aiDescribeProject(input: ProjectDescribeInput): Promise<AiResult 
     .filter(Boolean)
     .join("\n");
 
-  const completion = await zai.chat.completions.create({
-    messages: [
-      { role: "assistant", content: system },
-      { role: "user", content: context },
-    ],
-    thinking: { type: "disabled" },
-  });
+  const completion = input.imageUrl
+    ? await zai.chat.completions.createVision({
+        messages: [
+          { role: "assistant", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: `${context}\n\nUse the attached project image as visual reference. Describe only details that are visible or supported by the project brief; do not guess exact measurements, materials, brand text, or lighting type.` },
+              { type: "image_url", image_url: { url: input.imageUrl } },
+            ],
+          },
+        ],
+        thinking: { type: "disabled" },
+      })
+    : await zai.chat.completions.create({
+        messages: [
+          { role: "assistant", content: system },
+          { role: "user", content: context },
+        ],
+        thinking: { type: "disabled" },
+      });
 
   const raw = completion.choices[0]?.message?.content ?? "";
   const parsed = extractJson(raw);

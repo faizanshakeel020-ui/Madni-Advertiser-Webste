@@ -49,7 +49,7 @@ import {
   adminFetchPortfolio,
   adminRenamePortfolioCategory,
   adminSavePortfolioItem,
-  uploadImage,
+  uploadImages,
 } from "@/lib/api";
 import { useContent } from "@/lib/content";
 
@@ -240,12 +240,13 @@ export function AdminPortfolio() {
     }
   };
 
-  const upload = async (file: File) => {
+  const upload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploading(true);
     try {
-      const { url } = await uploadImage(file);
-      setEditing((s) => (s ? { ...s, image: url } : s));
-      toast.success("Image uploaded");
+      const { urls } = await uploadImages(files);
+      setEditing((s) => (s ? { ...s, image: urls[0] ?? s.image } : s));
+      toast.success(files.length === 1 ? "Image uploaded" : `${files.length} images uploaded; first image selected`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -475,10 +476,11 @@ export function AdminPortfolio() {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
+                          multiple
                           className="hidden"
                           onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) void upload(f);
+                            const files = Array.from(e.target.files ?? []);
+                            if (files.length > 0) void upload(files);
                             e.currentTarget.value = "";
                           }}
                         />

@@ -76,6 +76,8 @@ export function AdminView() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({ orders: 0, quotes: 0 });
+  const seenQuotes = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     adminSession()
@@ -92,6 +94,15 @@ export function AdminView() {
     } catch {
       // non-critical
     }
+  }, []);
+
+  const markTabRead = useCallback((nextTab: Tab) => {
+    setTab(nextTab);
+    setUnreadCounts((current) => {
+      if (nextTab === "orders") return { ...current, orders: 0 };
+      if (nextTab === "quotes") return { ...current, quotes: 0 };
+      return current;
+    });
   }, []);
 
   useEffect(() => {
@@ -115,6 +126,9 @@ export function AdminView() {
     socket.on("new-order", (o: NewOrderEvent) => {
       if (!o?.orderNumber || seenOrders.current.has(o.orderNumber)) return;
       seenOrders.current.add(o.orderNumber);
+      if (tab !== "orders") {
+        setUnreadCounts((current) => ({ ...current, orders: current.orders + 1 }));
+      }
       toast.success(`New order — ${o.orderNumber}`, {
         description: [
           o.customerName,
@@ -128,7 +142,7 @@ export function AdminView() {
         duration: 15000,
         action: {
           label: "View Order",
-          onClick: () => setTab("orders"),
+          onClick: () => markTabRead("orders"),
         },
       });
       void refresh(); // dashboard stats + orders list update instantly
@@ -136,7 +150,68 @@ export function AdminView() {
     return () => {
       socket.disconnect();
     };
-  }, [authState, refresh]);
+  }, [authState, refresh, tab]);
+
+  /* Keep the panel live even when the optional socket service is offline. */
+  useEffect(() => {
+    if (authState !== "panel") return;
+
+    let initialized = false;
+    let quotesInitialized = false;
+    const checkForNewOrders = async () => {
+      try {
+        const [latestOrders, latestQuotes] = await Promise.all([adminFetchOrders(), adminFetchQuotes()]);
+        if (!initialized) {
+          latestOrders.forEach((order) => seenOrders.current.add(order.orderNumber));
+          initialized = true;
+        }
+        if (!quotesInitialized) {
+          latestQuotes.forEach((quote) => seenQuotes.current.add(quote.reference));
+          quotesInitialized = true;
+        }
+
+        const newOrders = latestOrders.filter((order) => !seenOrders.current.has(order.orderNumber));
+        newOrders.forEach((order) => {
+          seenOrders.current.add(order.orderNumber);
+          if (tab !== "orders") {
+            setUnreadCounts((current) => ({ ...current, orders: current.orders + 1 }));
+          }
+          toast.success(`New order — ${order.orderNumber}`, {
+            description: `${order.customerName} · ${order.city} · ${formatPKR(order.subtotal)}`,
+            duration: 15000,
+            action: {
+              label: "View Order",
+              onClick: () => markTabRead("orders"),
+            },
+          });
+        });
+
+        const newQuotes = latestQuotes.filter((quote) => !seenQuotes.current.has(quote.reference));
+        newQuotes.forEach((quote) => {
+          seenQuotes.current.add(quote.reference);
+          if (tab !== "quotes") {
+            setUnreadCounts((current) => ({ ...current, quotes: current.quotes + 1 }));
+          }
+          toast.success(`New quote request — ${quote.reference}`, {
+            description: `${quote.name} · ${quote.service} · ${quote.city}`,
+            duration: 15000,
+            action: {
+              label: "View Quotes",
+              onClick: () => markTabRead("quotes"),
+            },
+          });
+        });
+
+        if (newOrders.length > 0 || newQuotes.length > 0) await refresh();
+      } catch {
+        // The socket connection or the next polling pass can recover silently.
+      }
+    };
+
+    void checkForNewOrders();
+    const interval = window.setInterval(() => void checkForNewOrders(), 3000);
+    return () => window.clearInterval(interval);
+  }, [authState, refresh, tab]);
 
   if (authState === "checking") {
     return (
@@ -205,7 +280,7 @@ export function AdminView() {
               <button
                 key={id}
                 onClick={() => {
-                  setTab(id);
+                  markTabRead(id);
                   setSidebarOpen(false);
                 }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-bold transition-colors ${
@@ -216,7 +291,17 @@ export function AdminView() {
                 aria-current={tab === id ? "page" : undefined}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
-                {label}
+                <span className="flex-1 text-left">{label}</span>
+                {(id === "orders" || id === "quotes") && unreadCounts[id] > 0 && (
+                  <span
+                    className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
+                      tab === id ? "bg-white text-primary" : "bg-primary text-primary-foreground"
+                    }`}
+                    aria-label={`${unreadCounts[id]} unread ${label.toLowerCase()}`}
+                  >
+                    {unreadCounts[id] > 99 ? "99+" : unreadCounts[id]}
+                  </span>
+                )}
               </button>
             ))}
           </nav>

@@ -23,6 +23,20 @@ async function jsonFetch<T>(input: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+const publicRequestCache = new Map<string, Promise<unknown>>();
+
+function cachedJsonFetch<T>(input: string): Promise<T> {
+  const cached = publicRequestCache.get(input);
+  if (cached) return cached as Promise<T>;
+  const request = jsonFetch<T>(input);
+  publicRequestCache.set(input, request);
+  const clear = () => {
+    if (publicRequestCache.get(input) === request) publicRequestCache.delete(input);
+  };
+  void request.then(clear, clear);
+  return request;
+}
+
 // ---------- Public catalog ----------
 
 export type ProductQuery = {
@@ -58,11 +72,11 @@ export async function fetchProduct(slug: string): Promise<{ product: Product; re
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  return jsonFetch<Category[]>("/api/categories");
+  return cachedJsonFetch<Category[]>("/api/categories");
 }
 
 export async function fetchClients(): Promise<Client[]> {
-  return jsonFetch<Client[]>("/api/clients");
+  return cachedJsonFetch<Client[]>("/api/clients");
 }
 
 // ---------- Orders ----------
@@ -419,6 +433,7 @@ export async function adminGenerateProjectDescription(data: {
   title: string;
   year?: number | null;
   hints?: string;
+  imageUrl?: string | null;
   variation?: number;
 }): Promise<GenerateDescriptionResponse> {
   return jsonFetch("/api/admin/generate-project-description", {

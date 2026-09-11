@@ -103,12 +103,12 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
                   </td>
                   <td className="px-4 py-3">
                     <Select value={q.status} onValueChange={(v) => updateStatus(q.id, v)} disabled={updating}>
-                      <SelectTrigger className="h-8 w-[130px] text-xs font-bold">
+                      <SelectTrigger className={`h-8 w-[130px] text-xs font-bold ${STATUS_STYLE[q.status] ?? ""}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {QUOTE_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                          <SelectItem key={s} value={s} className={`text-xs font-semibold ${STATUS_STYLE[s] ?? ""}`}>{s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -179,10 +179,10 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
                   </dl>
                   <div className="mt-3">
                     <Select value={detail.status} onValueChange={(v) => updateStatus(detail.id, v)} disabled={updating}>
-                      <SelectTrigger className="h-9 text-xs font-bold"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className={`h-9 text-xs font-bold ${STATUS_STYLE[detail.status] ?? ""}`}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {QUOTE_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                          <SelectItem key={s} value={s} className={`text-xs font-semibold ${STATUS_STYLE[s] ?? ""}`}>{s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

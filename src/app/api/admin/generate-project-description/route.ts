@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     const year =
       typeof b.year === "number" && Number.isFinite(b.year) && b.year > 1900 ? Math.round(b.year) : null;
+    const imageUrl = b.imageUrl ? String(b.imageUrl).trim() : null;
     const variation = Number.isFinite(Number(b.variation))
       ? Math.max(1, Math.min(20, Number(b.variation)))
       : 1;
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
       year,
       otherProjectTitles,
       hints: b.hints ? String(b.hints) : null,
+      imageUrl: imageUrl ? new URL(imageUrl, req.url).toString() : null,
       variation,
     });
     return NextResponse.json(result);

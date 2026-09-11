@@ -153,34 +153,6 @@ export function ShopView() {
 
   return (
     <div>
-      {/* Page header */}
-      <div className="border-b bg-zinc-950 py-10 lg:py-12">
-        <div className="container-site">
-          <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">The Shop</p>
-          <h1 className="font-display text-3xl font-bold text-white lg:text-4xl">Signage Shop</h1>
-          <p className="mt-2 max-w-xl text-sm text-zinc-400">
-            Ready-made signs with instant checkout, plus custom-order items quoted to your exact size and specs.
-          </p>
-          <form
-            className="relative mt-6 max-w-md"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setParam("q", searchText.trim());
-            }}
-            role="search"
-          >
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
-            <Input
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search within shop…"
-              className="h-11 rounded-full border-white/15 bg-white/10 pl-10 text-white placeholder:text-zinc-500"
-              aria-label="Search products"
-            />
-          </form>
-        </div>
-      </div>
-
       <div className="container-site py-8 lg:py-10">
         <div className="flex gap-8">
           {/* Sidebar (desktop) */}
@@ -229,6 +201,23 @@ export function ShopView() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <form
+                  className="relative hidden sm:block"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setParam("q", searchText.trim());
+                  }}
+                  role="search"
+                >
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder="Search products…"
+                    className="h-9 w-44 pl-9 text-sm lg:w-56"
+                    aria-label="Search products"
+                  />
+                </form>
                 <span className="hidden text-xs font-medium text-zinc-500 sm:inline">Sort by</span>
                 <Select value={activeSort} onValueChange={(v) => setParam("sort", v)}>
                   <SelectTrigger className="h-9 w-[170px] text-sm" aria-label="Sort products">

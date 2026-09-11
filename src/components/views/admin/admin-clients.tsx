@@ -48,7 +48,6 @@ import {
   adminGenerateProjectDescription,
   adminSaveClient,
   adminSaveClientProject,
-  uploadImage,
   uploadImages,
 } from "@/lib/api";
 import type { GenerateDescriptionResponse } from "@/lib/api";
@@ -150,12 +149,13 @@ export function AdminClients() {
     }
   };
 
-  const handleLogoUpload = async (file: File) => {
+  const handleLogoUpload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingLogo(true);
     try {
-      const { url } = await uploadImage(file);
-      setClientEdit((s) => (s ? { ...s, logo: url } : s));
-      toast.success("Logo uploaded");
+      const { urls } = await uploadImages(files);
+      setClientEdit((s) => (s ? { ...s, logo: urls[0] ?? s.logo } : s));
+      toast.success(files.length === 1 ? "Logo uploaded" : `${files.length} images uploaded; first image selected as logo`);
     } catch (e) {
       toast.error("Upload failed", { description: e instanceof Error ? e.message : "" });
     } finally {
@@ -178,6 +178,7 @@ export function AdminClients() {
         title: src.title.trim(),
         year: src.year ? Number(src.year) : null,
         hints,
+        imageUrl: src.images[0] ?? null,
         variation,
       });
       setProjectEdit((s) => (s ? { ...s, description: res.description } : s));
@@ -249,7 +250,7 @@ export function AdminClients() {
   useEffect(() => {
     if (!projectEdit || projectEdit.id || projDescTouched.current || generatingDesc) return;
     const title = projectEdit.title.trim();
-    if (title.length < 6 || projectEdit.description.trim()) return;
+    if (title.length < 6 || projectEdit.description.trim() || projectEdit.images.length === 0) return;
     if (title === projLastGenKey.current) return;
     const t = setTimeout(() => {
       projLastGenKey.current = title;
@@ -433,10 +434,11 @@ export function AdminClients() {
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
+                      multiple
                       className="hidden"
                       onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) void handleLogoUpload(f);
+                        const files = Array.from(e.target.files ?? []);
+                        if (files.length > 0) void handleLogoUpload(files);
                         e.currentTarget.value = "";
                       }}
                     />
@@ -623,7 +625,7 @@ export function AdminClients() {
                       <button
                         type="button"
                         onClick={generateProjDescNow}
-                        disabled={generatingDesc || !projectEdit.title.trim()}
+                        disabled={generatingDesc || !projectEdit.title.trim() || projectEdit.images.length === 0}
                         className="flex items-center gap-1 rounded-md border border-primary/40 px-2 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-accent disabled:opacity-40"
                       >
                         {generatingDesc ? (
@@ -631,7 +633,7 @@ export function AdminClients() {
                         ) : (
                           <Wand2 className="h-3 w-3" aria-hidden="true" />
                         )}
-                        {projectEdit.description.trim() ? "Regenerate" : "Write with AI"}
+                        {projectEdit.description.trim() ? "Match to image" : "Describe image"}
                       </button>
                     </div>
                   </div>
@@ -655,7 +657,7 @@ export function AdminClients() {
                     </p>
                   ) : (
                     <p className="text-xs text-zinc-400">
-                      Auto-written as a long, ranking-focused case study — edit freely.
+                      Add a project image, then use “Describe image” or “Match to image” to write a picture-aware case study.
                     </p>
                   )}
                 </div>

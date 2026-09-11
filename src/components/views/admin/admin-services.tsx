@@ -58,7 +58,7 @@ import {
   adminFetchServices,
   adminSaveService,
   adminUpdateServiceSub,
-  uploadImage,
+  uploadImages,
 } from "@/lib/api";
 import { useContent } from "@/lib/content";
 import { slugify } from "@/lib/format";
@@ -248,12 +248,13 @@ export function AdminServices() {
     }
   };
 
-  const uploadHero = async (file: File) => {
+  const uploadHero = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingHero(true);
     try {
-      const { url } = await uploadImage(file);
-      setEditing((s) => (s ? { ...s, hero: url } : s));
-      toast.success("Hero image uploaded");
+      const { urls } = await uploadImages(files);
+      setEditing((s) => (s ? { ...s, hero: urls[0] ?? s.hero } : s));
+      toast.success(files.length === 1 ? "Hero image uploaded" : `${files.length} images uploaded; first image selected`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -280,12 +281,13 @@ export function AdminServices() {
     setSubOpen(true);
   };
 
-  const uploadSub = async (file: File) => {
+  const uploadSub = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingSub(true);
     try {
-      const { url } = await uploadImage(file);
-      setSubEdit((s) => (s ? { ...s, image: url } : s));
-      toast.success("Image uploaded");
+      const { urls } = await uploadImages(files);
+      setSubEdit((s) => (s ? { ...s, image: urls[0] ?? s.image } : s));
+      toast.success(files.length === 1 ? "Image uploaded" : `${files.length} images uploaded; first image selected`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -368,7 +370,7 @@ export function AdminServices() {
           {rows.map((s) => (
             <section key={s.id} className="min-w-0 rounded-2xl border bg-white shadow-sm">
               {/* header: hero thumb + name + actions */}
-              <div className="flex items-center gap-3 border-b p-4">
+              <div className="flex flex-wrap items-center gap-3 border-b p-4">
                 <span className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-zinc-100">
                   {s.hero ? (
                     <img src={s.hero} alt={`${s.name} hero`} className="h-full w-full object-cover" />
@@ -382,7 +384,7 @@ export function AdminServices() {
                     {s.tagline || s.slug}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-0.5">
+                <div className="flex basis-full items-center justify-end gap-0.5 border-t border-zinc-100 pt-2">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => move(s, -1)} aria-label="Move up" disabled={rows[0]?.id === s.id}>
                     <ArrowUp className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -547,10 +549,11 @@ export function AdminServices() {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
+                          multiple
                           className="hidden"
                           onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) void uploadHero(f);
+                            const files = Array.from(e.target.files ?? []);
+                            if (files.length > 0) void uploadHero(files);
                             e.currentTarget.value = "";
                           }}
                         />
@@ -671,10 +674,11 @@ export function AdminServices() {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
+                          multiple
                           className="hidden"
                           onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) void uploadSub(f);
+                            const files = Array.from(e.target.files ?? []);
+                            if (files.length > 0) void uploadSub(files);
                             e.currentTarget.value = "";
                           }}
                         />

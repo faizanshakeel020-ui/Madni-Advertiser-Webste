@@ -102,22 +102,20 @@ function ProjectGallery({
             <Images className="h-3 w-3" aria-hidden="true" />
             {safeIdx + 1}/{images.length}
           </span>
-          <div className="absolute bottom-14 right-3 flex gap-1.5 sm:bottom-16">
-            <button
-              onClick={() => setIdx((safeIdx - 1 + images.length) % images.length)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950/70 text-white transition-colors hover:bg-primary"
-              aria-label="Previous image"
-            >
-              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => setIdx((safeIdx + 1) % images.length)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950/70 text-white transition-colors hover:bg-primary"
-              aria-label="Next image"
-            >
-              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+          <button
+            onClick={() => setIdx((safeIdx - 1 + images.length) % images.length)}
+            className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-950/70 text-white shadow-sm transition-colors hover:bg-primary"
+            aria-label="Previous image"
+          >
+            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <button
+            onClick={() => setIdx((safeIdx + 1) % images.length)}
+            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-950/70 text-white shadow-sm transition-colors hover:bg-primary"
+            aria-label="Next image"
+          >
+            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+          </button>
           {/* thumbnail strip */}
           <div className="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto bg-gradient-to-t from-zinc-950/85 to-transparent p-2 scrollbar-none">
             {images.map((img, j) => (
@@ -293,7 +291,7 @@ export function CaseStudyView({ slug }: { slug: string }) {
                 <div className="sm:grid sm:grid-cols-2">
                   {/* image — alternates left/right per project */}
                   <div
-                    className={`relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 sm:aspect-auto sm:min-h-[300px] ${
+                    className={`relative h-[280px] w-full overflow-hidden bg-zinc-100 sm:h-[360px] lg:h-[420px] ${
                       i % 2 === 1 ? "sm:order-2" : "sm:order-1"
                     }`}
                   >
@@ -313,8 +311,9 @@ export function CaseStudyView({ slug }: { slug: string }) {
                     </p>
                     <h2 className="mt-1.5 font-display text-xl font-bold text-zinc-900 sm:text-2xl">{p.title}</h2>
                     <div className="mt-4 space-y-3 border-t border-zinc-100 pt-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Project details</p>
                       {splitParagraphs(p.description).map((para, j) => (
-                        <p key={j} className="whitespace-pre-line text-[15px] leading-relaxed text-zinc-600">
+                        <p key={j} className="max-w-prose whitespace-pre-line text-[15px] leading-7 text-zinc-600">
                           {para}
                         </p>
                       ))}

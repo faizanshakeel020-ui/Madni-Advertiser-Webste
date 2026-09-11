@@ -15,26 +15,6 @@ export function ServicesIndexView() {
   const { services: SERVICES } = useContent();
   return (
     <div>
-      <div className="relative overflow-hidden bg-zinc-950 py-16 lg:py-20">
-        { }
-        <img
-          src="/images/hero-1.png"
-          alt="Illuminated signage on a modern building"
-          className="absolute inset-0 h-full w-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-zinc-950/30" aria-hidden="true" />
-        <div className="container-site relative">
-          <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Services</p>
-          <h1 className="font-display text-3xl font-bold text-white lg:text-5xl">
-            Everything Signage, Under One Roof
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-            Design, fabrication, installation and maintenance of every type of sign — outdoor,
-            indoor, digital, retail and exhibition. Explore what we do best, then request a free quote.
-          </p>
-        </div>
-      </div>
-
       <div className="container-site py-14 lg:py-20">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {SERVICES.map((s) => (

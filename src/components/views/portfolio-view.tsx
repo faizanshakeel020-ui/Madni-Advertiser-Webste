@@ -25,25 +25,6 @@ export function PortfolioView() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="relative overflow-hidden bg-zinc-950 py-14 lg:py-20">
-        { }
-        <img
-          src="/images/proj-building.png"
-          alt="Illuminated building signage project"
-          className="absolute inset-0 h-full w-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-zinc-950/20" aria-hidden="true" />
-        <div className="container-site relative">
-          <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Portfolio</p>
-          <h1 className="font-display text-3xl font-bold text-white lg:text-5xl">Projects We&apos;re Proud Of</h1>
-          <p className="mt-3 max-w-2xl text-sm text-zinc-300 sm:text-base">
-            Restaurants to hospitals, single signs to full campuses — a look at the work our
-            clients display every day.
-          </p>
-        </div>
-      </div>
-
       <div className="container-site py-10 lg:py-14">
         {/* Filter chips */}
         <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filter projects by type">

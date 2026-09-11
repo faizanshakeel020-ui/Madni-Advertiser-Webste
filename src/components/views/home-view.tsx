@@ -63,7 +63,9 @@ export function HomeView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [clientsLoading, setClientsLoading] = useState(true);
 
   // clients logo row — auto-moving strip (loop) with manual arrows
   const [clientsRef, clientsEmbla] = useEmblaCarousel({
@@ -86,15 +88,18 @@ export function HomeView() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([fetchCategories(), fetchProducts({ featured: true, per: 8, sort: "popular" }), fetchClients()])
-      .then(([cats, prods, cls]) => {
-        if (!alive) return;
-        setCategories(cats);
-        setFeatured(prods.items);
-        setClients(cls);
-      })
+    fetchCategories()
+      .then((cats) => alive && setCategories(cats))
       .catch(() => {})
-      .finally(() => alive && setLoading(false));
+      .finally(() => alive && setCategoriesLoading(false));
+    fetchProducts({ featured: true, per: 8, sort: "popular" })
+      .then((prods) => alive && setFeatured(prods.items))
+      .catch(() => {})
+      .finally(() => alive && setFeaturedLoading(false));
+    fetchClients()
+      .then((cls) => alive && setClients(cls))
+      .catch(() => {})
+      .finally(() => alive && setClientsLoading(false));
     return () => {
       alive = false;
     };
@@ -214,7 +219,7 @@ export function HomeView() {
             description="Brands we've built for — click any logo to see the work we delivered for them."
           />
 
-          {loading ? (
+          {clientsLoading ? (
             <div className="mx-auto flex max-w-[1060px] gap-4 overflow-hidden sm:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
@@ -338,7 +343,7 @@ export function HomeView() {
             title="Shop by Category"
             description="Browse our best-selling signage — order ready-made products directly, or request a free quote for custom sizes."
           />
-          {loading ? (
+          {categoriesLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
@@ -433,7 +438,7 @@ export function HomeView() {
             </Button>
           </div>
 
-          {loading ? (
+          {featuredLoading ? (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-[3/4] rounded-xl" />

@@ -4,6 +4,7 @@
  * App shell — hash router + site chrome (header/footer/WhatsApp button).
  * All "pages" render client-side on the single "/" route.
  */
+import dynamic from "next/dynamic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, useRoute } from "@/lib/router";
 import { ContentProvider } from "@/lib/content";
@@ -21,7 +22,14 @@ import { AboutView } from "@/components/views/about-view";
 import { PortfolioView } from "@/components/views/portfolio-view";
 import { ContactView } from "@/components/views/contact-view";
 import { CaseStudyView } from "@/components/views/case-study-view";
-import { AdminView } from "@/components/views/admin/admin-view";
+
+const AdminView = dynamic(
+  () => import("@/components/views/admin/admin-view").then((module) => module.AdminView),
+  {
+    ssr: false,
+    loading: () => <div className="min-h-screen bg-zinc-100" aria-label="Loading admin panel" />,
+  }
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {

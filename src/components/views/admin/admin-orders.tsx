@@ -99,12 +99,12 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
                   </td>
                   <td className="px-4 py-3">
                     <Select value={o.status} onValueChange={(v) => updateStatus(o.id, v)} disabled={updating}>
-                      <SelectTrigger className="h-8 w-[130px] text-xs font-bold">
+                      <SelectTrigger className={`h-8 w-[130px] text-xs font-bold ${STATUS_STYLE[o.status] ?? ""}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {ORDER_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                          <SelectItem key={s} value={s} className={`text-xs font-semibold ${STATUS_STYLE[s] ?? ""}`}>{s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -160,10 +160,10 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
                   </dl>
                   <div className="mt-3">
                     <Select value={detail.status} onValueChange={(v) => updateStatus(detail.id, v)} disabled={updating}>
-                      <SelectTrigger className="h-9 text-xs font-bold"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className={`h-9 text-xs font-bold ${STATUS_STYLE[detail.status] ?? ""}`}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {ORDER_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                          <SelectItem key={s} value={s} className={`text-xs font-semibold ${STATUS_STYLE[s] ?? ""}`}>{s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

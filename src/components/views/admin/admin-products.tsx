@@ -4,6 +4,7 @@
  * Admin — Products management (add/edit/delete, images, categories, type, stock).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   Pencil,
@@ -98,6 +99,7 @@ const emptyProduct: EditState = {
 };
 
 export function AdminProducts() {
+  const queryClient = useQueryClient();
   const { navigate } = useRoute();
   const [products, setProducts] = useState<Product[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -123,11 +125,17 @@ export function AdminProducts() {
 
   const load = async () => {
     setLoading(true);
+    const productsRequest = adminFetchProducts()
+      .then((ps) => setProducts(ps))
+      .catch(() => {
+        toast.error("Failed to load products");
+      });
+    fetchCategories()
+      .then((cs) => setCats(cs))
+      .catch(() => {});
     try {
-      const [ps, cs] = await Promise.all([adminFetchProducts(), fetchCategories()]);
-      setProducts(ps);
-      setCats(cs);
-    } catch (e) {
+      await productsRequest;
+    } catch {
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
@@ -370,6 +378,10 @@ export function AdminProducts() {
         stock: Number(editing.stock) || 0,
         featured: editing.featured,
       });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["categories"] }),
+      ]);
       toast.success(editing.id ? "Product updated" : "Product created");
       setEditOpen(false);
       await load();
@@ -818,6 +830,7 @@ export function AdminProducts() {
                 if (!deleteTarget) return;
                 try {
                   await adminDeleteProduct(deleteTarget.id);
+                  await queryClient.invalidateQueries({ queryKey: ["products"] });
                   toast.success("Product deleted");
                   setProducts((ps) => ps.filter((p) => p.id !== deleteTarget.id));
                 } catch {
