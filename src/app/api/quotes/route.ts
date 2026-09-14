@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    void sendNotificationEmail({
+    await sendNotificationEmail({
       subject: `New quote request ${quote.reference} from ${quote.name}`,
       replyTo: quote.email,
       idempotencyKey: `new-quote/${quote.id}`,

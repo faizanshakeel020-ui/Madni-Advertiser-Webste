@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       at: new Date().toISOString(),
     });
 
-    void sendNotificationEmail({
+    await sendNotificationEmail({
       subject: `New order ${order.orderNumber} from ${order.customerName}`,
       replyTo: order.email,
       idempotencyKey: `new-order/${order.id}`,
