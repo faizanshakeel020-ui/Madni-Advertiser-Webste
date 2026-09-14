@@ -27,7 +27,11 @@ export function QuoteView() {
           </p>
           <div className="mt-5 flex flex-wrap gap-4 text-sm">
             <a href={SITE.phoneHref} className="flex items-center gap-2 font-bold text-white hover:text-primary">
-              <PhoneCall className="h-4 w-4 text-primary" aria-hidden="true" /> {SITE.phone}
+              <PhoneCall className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="flex flex-col leading-tight">
+                <span>{SITE.phone}</span>
+                <span className="text-xs font-semibold text-primary">{SITE.phoneContactName}</span>
+              </span>
             </a>
             <a
               href={`https://wa.me/${SITE.whatsapp}`}

@@ -2,7 +2,7 @@
 
 /**
  * Admin panel — login-protected in-site management area.
- * Access via #/admin. Default demo credentials: admin / madni123
+ * Access via #/admin.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -20,6 +20,8 @@ import {
   Phone,
   ReceiptText,
   ClipboardList,
+  Info,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
@@ -43,9 +45,11 @@ import { AdminQuotes } from "./admin-quotes";
 import { AdminClients } from "./admin-clients";
 import { AdminServices } from "./admin-services";
 import { AdminPortfolio } from "./admin-portfolio";
+import { AdminSettings } from "./admin-settings";
+import { AdminAbout } from "./admin-about";
 import type { Order, QuoteRequest } from "@/lib/types";
 
-type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients" | "services" | "portfolio";
+type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients" | "services" | "portfolio" | "about" | "settings";
 
 type NewOrderEvent = {
   orderNumber: string;
@@ -67,6 +71,8 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "clients", label: "Clients", icon: Building2 },
   { id: "services", label: "Services", icon: Briefcase },
   { id: "portfolio", label: "Portfolio", icon: Images },
+  { id: "about", label: "About Us", icon: Info },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminView() {
@@ -324,6 +330,8 @@ export function AdminView() {
           {tab === "clients" && <AdminClients />}
           {tab === "services" && <AdminServices />}
           {tab === "portfolio" && <AdminPortfolio />}
+          {tab === "about" && <AdminAbout />}
+          {tab === "settings" && <AdminSettings onUpdated={() => setAuthState("login")} />}
         </main>
       </div>
     </div>
@@ -377,7 +385,6 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               className="border-white/10 bg-zinc-950 text-white placeholder:text-zinc-600"
-              placeholder="admin"
             />
           </div>
           <div className="space-y-1.5">
@@ -389,16 +396,12 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               className="border-white/10 bg-zinc-950 text-white placeholder:text-zinc-600"
-              placeholder="••••••••"
             />
           </div>
           <Button type="submit" className="w-full font-bold" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Lock className="h-4 w-4" aria-hidden="true" />}
             Sign In
           </Button>
-          <p className="text-center text-xs text-zinc-500">
-            Demo credentials: <span className="font-mono text-zinc-400">admin / madni123</span>
-          </p>
           <p className="text-center text-xs">
             <a href="/" className="text-zinc-500 hover:text-primary">← Back to public site</a>
           </p>

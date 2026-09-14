@@ -15,9 +15,11 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { Button } from "@/components/ui/button";
 import { useRoute } from "@/lib/router";
 import { SITE } from "@/lib/constants";
+import { useContent } from "@/lib/content";
 
 export function AboutView() {
   const { navigate } = useRoute();
+  const { about } = useContent();
 
   return (
     <div>
@@ -25,7 +27,7 @@ export function AboutView() {
       <div className="relative overflow-hidden bg-zinc-950 py-16 lg:py-24">
         { }
         <img
-          src="/images/about-workshop.png"
+          src={about.images[0] ?? "/images/about-workshop.png"}
           alt="Madni Advertiser signage fabrication workshop"
           className="absolute inset-0 h-full w-full object-cover opacity-25"
         />
@@ -33,12 +35,10 @@ export function AboutView() {
         <div className="container-site relative">
           <p className="mb-2 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">About Us</p>
           <h1 className="max-w-2xl font-display text-3xl font-bold leading-tight text-white lg:text-5xl">
-            The sign-makers behind Pakistan&apos;s brightest brands
+            {about.heroTitle}
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-            For over {SITE.stats.years} years, {SITE.name} has designed, fabricated and installed
-            signage that helps businesses get noticed — from a single glowing name plate to
-            complete building identities.
+            {about.heroText}
           </p>
         </div>
       </div>
@@ -49,15 +49,12 @@ export function AboutView() {
           <div>
             <SectionHeading
               eyebrow="Our Story"
-              title="Started with one flex printer. Still obsessed with craft."
+              title={about.storyTitle}
               align="left"
             />
             <div className="space-y-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
               <p>
-                {SITE.name} began in Lahore as a small printing setup with a simple belief: every
-                business deserves a sign it&apos;s proud of. Today, our fabrication workshop houses
-                CNC routers, laser cutters, acrylic bending machines and a full LED assembly line —
-                but the belief hasn&apos;t changed.
+                {about.storyText}
               </p>
               <p>
                 We&apos;ve completed <b className="text-zinc-900">{SITE.stats.projects}+ projects</b> across{" "}
@@ -67,26 +64,20 @@ export function AboutView() {
                 premium materials and the same installation crew that treats your wall like their own.
               </p>
               <p>
-                Our mission is simple: <b className="text-zinc-900">make signs that make businesses shine</b> —
-                and keep them shining with honest after-sales service.
+                <b className="text-zinc-900">{about.mission}</b>
               </p>
             </div>
           </div>
           <div className="grid gap-4">
-            { }
-            <img
-              src="/images/about-workshop.png"
-              alt="Inside our fabrication workshop — CNC and laser equipment"
-              className="aspect-[16/10] w-full rounded-2xl object-cover shadow-md"
-              loading="lazy"
-            />
-            { }
-            <img
-              src="/images/about-team.png"
-              alt="Madni Advertiser team reviewing a project"
-              className="aspect-[16/10] w-full rounded-2xl object-cover shadow-md"
-              loading="lazy"
-            />
+            {about.images.map((image, index) => (
+              <img
+                key={`${image}-${index}`}
+                src={image}
+                alt={`Madni Advertiser About Us image ${index + 1}`}
+                className="aspect-[16/10] w-full rounded-2xl object-cover shadow-md"
+                loading="lazy"
+              />
+            ))}
           </div>
         </div>
       </section>

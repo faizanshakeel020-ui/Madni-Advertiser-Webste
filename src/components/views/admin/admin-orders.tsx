@@ -4,7 +4,7 @@
  * Admin — Orders management (view Buy Now orders, update status).
  */
 import { useState } from "react";
-import { Banknote, Landmark, Package, Phone, ReceiptText, User } from "lucide-react";
+import { Banknote, Landmark, Package, Phone, ReceiptText, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminUpdateOrderStatus } from "@/lib/api";
+import { adminDeleteOrder, adminUpdateOrderStatus } from "@/lib/api";
 import { formatDateTime, formatPKR } from "@/lib/format";
 import { ORDER_STATUSES } from "@/lib/constants";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -38,6 +38,7 @@ const STATUS_STYLE: Record<string, string> = {
 export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () => void }) {
   const [detail, setDetail] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
@@ -50,6 +51,21 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
       toast.error("Status update failed");
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const deleteOrder = async (order: Order) => {
+    if (!window.confirm(`Delete order ${order.orderNumber}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      await adminDeleteOrder(order.id);
+      toast.success("Order deleted");
+      setDetail(null);
+      refresh();
+    } catch {
+      toast.error("Order deletion failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -110,9 +126,7 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
                     </Select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button variant="outline" size="sm" className="font-bold" onClick={() => setDetail(o)}>
-                      View
-                    </Button>
+                    <div className="flex justify-end gap-2"><Button variant="outline" size="sm" className="font-bold" onClick={() => setDetail(o)}>View</Button><Button variant="outline" size="icon" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => deleteOrder(o)} disabled={deleting} aria-label={`Delete order ${o.orderNumber}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button></div>
                   </td>
                 </tr>
               ))}
@@ -199,6 +213,7 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
                   <p className="mt-1">{detail.notes}</p>
                 </div>
               )}
+              <div className="flex justify-end border-t pt-4"><Button type="button" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => deleteOrder(detail)} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden="true" /> Delete order</Button></div>
             </>
           )}
         </DialogContent>

@@ -589,7 +589,10 @@ export function HomeView() {
                 variant="outline"
                 className="h-12 w-full rounded-full border-white/30 bg-transparent px-8 font-bold text-white hover:bg-white hover:text-zinc-900 sm:w-auto"
               >
-                Call {SITE.phone}
+                <span className="flex flex-col items-center leading-tight">
+                  <span>Call {SITE.phone}</span>
+                  <span className="text-xs font-semibold text-primary">{SITE.phoneContactName}</span>
+                </span>
               </Button>
             </a>
           </div>

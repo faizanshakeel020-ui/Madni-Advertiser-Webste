@@ -1,15 +1,18 @@
 "use client";
 
-import { Clock, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { QuoteForm } from "@/components/site/quote-form";
 import { WhatsAppIcon } from "@/components/site/icons";
 import { SectionHeading } from "@/components/site/section-heading";
 import { SITE, whatsappUrl } from "@/lib/constants";
 import { useRoute } from "@/lib/router";
 import { Button } from "@/components/ui/button";
+import { useContent } from "@/lib/content";
+import { SocialIcon } from "@/lib/social";
 
 export function ContactView() {
   const { navigate } = useRoute();
+  const { socialLinks } = useContent();
   return (
     <div>
       {/* Header */}
@@ -36,7 +39,10 @@ export function ContactView() {
                 </span>
                 <div>
                   <p className="font-bold text-zinc-900">Phone</p>
-                  <a href={SITE.phoneHref} className="text-zinc-600 hover:text-primary">{SITE.phone}</a>
+                  <a href={SITE.phoneHref} className="block text-zinc-600 hover:text-primary">
+                    <span className="block">{SITE.phone}</span>
+                    <span className="block text-xs font-semibold text-primary">{SITE.phoneContactName}</span>
+                  </a>
                 </div>
               </li>
               <li className="flex gap-3.5">
@@ -65,7 +71,9 @@ export function ContactView() {
                 </span>
                 <div>
                   <p className="font-bold text-zinc-900">Workshop & Office</p>
-                  <p className="text-zinc-600">{SITE.address}</p>
+                  <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-primary hover:underline">
+                    {SITE.address}
+                  </a>
                 </div>
               </li>
               <li className="flex gap-3.5">
@@ -80,21 +88,16 @@ export function ContactView() {
             </ul>
 
             <div className="mt-5 flex gap-2 border-t pt-5">
-              {[
-                { href: SITE.social.facebook, icon: Facebook, label: "Facebook" },
-                { href: SITE.social.instagram, icon: Instagram, label: "Instagram" },
-                { href: SITE.social.linkedin, icon: Linkedin, label: "LinkedIn" },
-                { href: SITE.social.youtube, icon: Youtube, label: "YouTube" },
-              ].map(({ href, icon: Icon, label }) => (
+              {socialLinks.map(({ url, platform }) => (
                 <a
-                  key={label}
-                  href={href}
+                  key={`${platform}-${url}`}
+                  href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={label}
+                  aria-label={platform}
                   className="flex h-9 w-9 items-center justify-center rounded-lg border text-zinc-600 transition-colors hover:border-primary hover:bg-accent hover:text-primary"
                 >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  <SocialIcon platform={platform} className="h-4 w-4" />
                 </a>
               ))}
             </div>
@@ -103,8 +106,8 @@ export function ContactView() {
           {/* Map */}
           <div className="overflow-hidden rounded-2xl border shadow-sm">
             <iframe
-              title="Madni Advertiser location map — Ferozepur Road, Lahore"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=74.3182%2C31.5180%2C74.3682%2C31.5480&layer=mapnik&marker=31.5330%2C74.3432"
+              title="Madni Advertiser location map — Imtiaz Center, Gulberg II, Lahore"
+              src={SITE.mapsEmbedUrl}
               className="h-64 w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -112,10 +115,10 @@ export function ContactView() {
             <div className="flex items-center justify-between bg-zinc-50 px-4 py-3">
               <p className="flex items-center gap-2 text-xs text-zinc-600">
                 <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                Ferozepur Road, Lahore
+                Imtiaz Center, Main Market, Gulberg II, Lahore
               </p>
               <a
-                href="https://www.google.com/maps/search/?api=1&query=Ferozepur+Road+Lahore+Pakistan"
+                href={SITE.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-bold text-primary hover:underline"

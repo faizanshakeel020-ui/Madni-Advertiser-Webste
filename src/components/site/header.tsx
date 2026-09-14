@@ -96,7 +96,7 @@ export function Header() {
                 href={SITE.phoneHref}
                 className="mt-0.5 block text-sm font-bold text-zinc-900 transition-colors hover:text-primary"
               >
-                {SITE.phone}
+                <span className="block">{SITE.phone}</span>
               </a>
             </div>
             <div className="hidden lg:block">

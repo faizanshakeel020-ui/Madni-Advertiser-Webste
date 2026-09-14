@@ -168,6 +168,27 @@ export async function adminSession(): Promise<{ authenticated: boolean }> {
   return jsonFetch("/api/admin/session");
 }
 
+export async function adminGetSettings(): Promise<{ username: string; settings: Record<string, any> }> {
+  return jsonFetch("/api/admin/settings");
+}
+
+export async function adminUpdateSettings(payload: {
+  currentPassword?: string;
+  username?: string;
+  password?: string;
+  settings?: Record<string, unknown>;
+}): Promise<{ ok: boolean; username: string }> {
+  return jsonFetch("/api/admin/settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteOrder(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+}
+
 export async function adminStats(): Promise<{
   products: number;
   orders: number;

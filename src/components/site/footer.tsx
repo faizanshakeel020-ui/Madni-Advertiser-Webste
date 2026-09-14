@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Clock, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppIcon } from "./icons";
 import { SITE, whatsappUrl } from "@/lib/constants";
@@ -11,10 +11,11 @@ import { useCart } from "@/store/cart";
 import { fetchCategories } from "@/lib/api";
 import { useEffect, useState } from "react";
 import type { Category } from "@/lib/types";
+import { SocialIcon } from "@/lib/social";
 
 export function Footer() {
   const { navigate } = useRoute();
-  const { services: SERVICES } = useContent();
+  const { services: SERVICES, socialLinks } = useContent();
   const [cats, setCats] = useState<Category[]>([]);
   const items = useCart((s) => s.items);
 
@@ -47,21 +48,16 @@ export function Footer() {
             signage for businesses and homes across Pakistan — since {new Date().getFullYear() - SITE.stats.years}.
           </p>
           <div className="mt-5 flex gap-2">
-            {[
-              { href: SITE.social.facebook, icon: Facebook, label: "Facebook" },
-              { href: SITE.social.instagram, icon: Instagram, label: "Instagram" },
-              { href: SITE.social.linkedin, icon: Linkedin, label: "LinkedIn" },
-              { href: SITE.social.youtube, icon: Youtube, label: "YouTube" },
-            ].map(({ href, icon: Icon, label }) => (
+            {socialLinks.map(({ url, platform }) => (
               <a
-                key={label}
-                href={href}
+                key={`${platform}-${url}`}
+                href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={label}
+                aria-label={platform}
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-zinc-300 transition-colors hover:bg-primary hover:text-white"
               >
-                <Icon className="h-4 w-4" aria-hidden="true" />
+                <SocialIcon platform={platform} className="h-4 w-4" />
               </a>
             ))}
           </div>
@@ -120,12 +116,17 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-zinc-400">
             <li className="flex gap-2.5">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <span>{SITE.address}</span>
+              <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline">
+                {SITE.address}
+              </a>
             </li>
             <li>
               <a href={SITE.phoneHref} className="flex gap-2.5 hover:text-primary">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                {SITE.phone}
+                <span>
+                  <span className="block">{SITE.phone}</span>
+                  <span className="block text-xs font-semibold text-primary">{SITE.phoneContactName}</span>
+                </span>
               </a>
             </li>
             <li>
