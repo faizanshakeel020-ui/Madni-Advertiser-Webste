@@ -6,7 +6,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { io } from "socket.io-client";
 import {
   BadgeDollarSign,
   Briefcase,
@@ -51,18 +50,6 @@ import type { Order, QuoteRequest } from "@/lib/types";
 
 type Tab = "dashboard" | "products" | "orders" | "quotes" | "clients" | "services" | "portfolio" | "about" | "settings";
 
-type NewOrderEvent = {
-  orderNumber: string;
-  customerName: string;
-  phone?: string;
-  city?: string;
-  subtotal?: number;
-  paymentMethod?: string;
-  itemCount?: number;
-  firstItem?: string;
-  at?: string;
-};
-
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
@@ -94,14 +81,14 @@ export function AdminView() {
   }, []);
 
   const refresh = useCallback(async () => {
-    try {
-      const [s, o, q] = await Promise.all([adminStats(), adminFetchOrders(), adminFetchQuotes()]);
-      setStats(s);
-      setOrders(o);
-      setQuotes(q);
-    } catch {
-      // non-critical
-    }
+    const [statsResult, ordersResult, quotesResult] = await Promise.allSettled([
+      adminStats(),
+      adminFetchOrders(),
+      adminFetchQuotes(),
+    ]);
+    if (statsResult.status === "fulfilled") setStats(statsResult.value);
+    if (ordersResult.status === "fulfilled") setOrders(ordersResult.value);
+    if (quotesResult.status === "fulfilled") setQuotes(quotesResult.value);
   }, []);
 
   const markTabRead = useCallback((nextTab: Tab) => {
@@ -119,48 +106,9 @@ export function AdminView() {
     if (authState === "panel") refresh();
   }, [authState, refresh]);
 
-  /* ---------- Live order notifications (socket.io via gateway) ---------- */
+  /* ---------- Live notifications via polling (Vercel-compatible) ---------- */
   const seenOrders = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (authState !== "panel") return;
-    // Never use a port in the URL — the gateway reads XTransformPort
-    const socket = io("/?XTransformPort=3003", {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionDelay: 2000,
-      reconnectionAttempts: 20,
-      timeout: 10000,
-    });
-    socket.on("new-order", (o: NewOrderEvent) => {
-      if (!o?.orderNumber || seenOrders.current.has(o.orderNumber)) return;
-      seenOrders.current.add(o.orderNumber);
-      if (tab !== "orders") {
-        setUnreadCounts((current) => ({ ...current, orders: current.orders + 1 }));
-      }
-      toast.success(`New order — ${o.orderNumber}`, {
-        description: [
-          o.customerName,
-          o.city,
-          o.subtotal !== undefined ? formatPKR(o.subtotal) : undefined,
-          o.itemCount ? `${o.itemCount} item${o.itemCount === 1 ? "" : "s"}` : undefined,
-          o.firstItem,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        duration: 15000,
-        action: {
-          label: "View Order",
-          onClick: () => markTabRead("orders"),
-        },
-      });
-      void refresh(); // dashboard stats + orders list update instantly
-    });
-    return () => {
-      socket.disconnect();
-    };
-  }, [authState, refresh, tab]);
-
-  /* Keep the panel live even when the optional socket service is offline. */
+  /* Keep the panel live without a separate socket service. */
   useEffect(() => {
     if (authState !== "panel") return;
 

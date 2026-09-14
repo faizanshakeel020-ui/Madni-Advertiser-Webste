@@ -8,18 +8,17 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const [products, orders, pendingOrders, quotes, newQuotes, deliveredAgg] =
-      await Promise.all([
-        db.product.count(),
-        db.order.count(),
-        db.order.count({ where: { status: "PENDING" } }),
-        db.quoteRequest.count(),
-        db.quoteRequest.count({ where: { status: "NEW" } }),
-        db.order.aggregate({
-          where: { status: { not: "CANCELLED" } },
-          _sum: { subtotal: true },
-        }),
-      ]);
+    const [products, orders, pendingOrders, quotes, newQuotes, deliveredAgg] = await db.$transaction([
+      db.product.count(),
+      db.order.count(),
+      db.order.count({ where: { status: "PENDING" } }),
+      db.quoteRequest.count(),
+      db.quoteRequest.count({ where: { status: "NEW" } }),
+      db.order.aggregate({
+        where: { status: { not: "CANCELLED" } },
+        _sum: { subtotal: true },
+      }),
+    ]);
     return NextResponse.json({
       products,
       orders,
