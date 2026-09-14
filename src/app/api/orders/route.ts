@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/admin-auth";
+import { escapeHtml, sendNotificationEmail } from "@/lib/email";
 
 type OrderItemPayload = {
   id: string;
@@ -136,6 +137,24 @@ export async function POST(req: NextRequest) {
       firstItem: validatedItems[0]?.name ?? "",
       at: new Date().toISOString(),
     });
+
+    void sendNotificationEmail({
+      subject: `New order ${order.orderNumber} from ${order.customerName}`,
+      replyTo: order.email,
+      html: `
+        <h2>New order received</h2>
+        <p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>
+        <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(order.phone)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(order.email || "Not provided")}</p>
+        <p><strong>Address:</strong> ${escapeHtml(order.address)}, ${escapeHtml(order.city)}</p>
+        <p><strong>Payment:</strong> ${escapeHtml(order.paymentMethod)}</p>
+        <p><strong>Total:</strong> PKR ${escapeHtml(order.subtotal.toLocaleString())}</p>
+        <h3>Items</h3>
+        <ul>${validatedItems.map((item) => `<li>${escapeHtml(item.name)} x ${item.qty} - PKR ${item.price.toLocaleString()}</li>`).join("")}</ul>
+        ${order.notes ? `<p><strong>Notes:</strong> ${escapeHtml(order.notes)}</p>` : ""}
+      `,
+    }).catch((error) => console.error("order email notification error", error));
 
     return NextResponse.json({ orderNumber: order.orderNumber }, { status: 201 });
   } catch (e) {

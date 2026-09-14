@@ -84,6 +84,8 @@ export function AdminView() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({ orders: 0, quotes: 0 });
   const seenQuotes = useRef<Set<string>>(new Set());
+  const orderBadgeCount = unreadCounts.orders || stats?.pendingOrders || 0;
+  const quoteBadgeCount = unreadCounts.quotes || stats?.newQuotes || 0;
 
   useEffect(() => {
     adminSession()
@@ -298,14 +300,18 @@ export function AdminView() {
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span className="flex-1 text-left">{label}</span>
-                {(id === "orders" || id === "quotes") && unreadCounts[id] > 0 && (
+                {(id === "orders" || id === "quotes") && (id === "orders" ? orderBadgeCount : quoteBadgeCount) > 0 && (
                   <span
                     className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
                       tab === id ? "bg-white text-primary" : "bg-primary text-primary-foreground"
                     }`}
-                    aria-label={`${unreadCounts[id]} unread ${label.toLowerCase()}`}
+                    aria-label={`${id === "orders" ? orderBadgeCount : quoteBadgeCount} ${label.toLowerCase()}`}
                   >
-                    {unreadCounts[id] > 99 ? "99+" : unreadCounts[id]}
+                    {(id === "orders" ? orderBadgeCount : quoteBadgeCount) > 99
+                      ? "99+"
+                      : id === "orders"
+                        ? orderBadgeCount
+                        : quoteBadgeCount}
                   </span>
                 )}
               </button>

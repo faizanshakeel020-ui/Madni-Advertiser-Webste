@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateQuoteRef } from "@/lib/admin-auth";
+import { escapeHtml, sendNotificationEmail } from "@/lib/email";
 
 /** POST /api/quotes — custom/service quote requests (guest) */
 export async function POST(req: NextRequest) {
@@ -57,6 +58,24 @@ export async function POST(req: NextRequest) {
         status: "NEW",
       },
     });
+
+    void sendNotificationEmail({
+      subject: `New quote request ${quote.reference} from ${quote.name}`,
+      replyTo: quote.email,
+      html: `
+        <h2>New quote request received</h2>
+        <p><strong>Reference:</strong> ${escapeHtml(quote.reference)}</p>
+        <p><strong>Name:</strong> ${escapeHtml(quote.name)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(quote.phone)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(quote.email || "Not provided")}</p>
+        <p><strong>Service:</strong> ${escapeHtml(quote.service)}</p>
+        ${quote.productName ? `<p><strong>Product:</strong> ${escapeHtml(quote.productName)}</p>` : ""}
+        <p><strong>City:</strong> ${escapeHtml(quote.city)}</p>
+        <p><strong>Project details:</strong></p>
+        <p>${escapeHtml(quote.details).replaceAll("\n", "<br>")}</p>
+        ${quote.referenceImage ? `<p><strong>Reference image:</strong> ${escapeHtml(quote.referenceImage)}</p>` : ""}
+      `,
+    }).catch((error) => console.error("quote email notification error", error));
 
     return NextResponse.json({ reference: quote.reference }, { status: 201 });
   } catch (e) {
