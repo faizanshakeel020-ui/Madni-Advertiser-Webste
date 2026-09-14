@@ -4,7 +4,7 @@
  * Admin — Quote Requests management (view custom/service quotes, update status).
  */
 import { useState } from "react";
-import { ClipboardList, ExternalLink, Mail, MapPin, Phone, User } from "lucide-react";
+import { ClipboardList, ExternalLink, Mail, MapPin, Phone, RefreshCw, User } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,12 +54,17 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-zinc-900">Quote Requests</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Custom orders & service inquiries — {quotes.length} total (
-          {quotes.filter((q) => q.status === "NEW").length} new)
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-zinc-900">Quote Requests</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Custom orders & service inquiries — {quotes.length} total (
+            {quotes.filter((q) => q.status === "NEW").length} new)
+          </p>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="Refresh quote requests" title="Refresh quote requests">
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">

@@ -4,7 +4,7 @@
  * Admin — Orders management (view Buy Now orders, update status).
  */
 import { useState } from "react";
-import { Banknote, Landmark, Package, Phone, ReceiptText, Trash2, User } from "lucide-react";
+import { Banknote, Landmark, Package, Phone, ReceiptText, RefreshCw, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,9 +71,14 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-zinc-900">Orders</h1>
-        <p className="mt-1 text-sm text-zinc-500">Buy Now orders — {orders.length} total</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-zinc-900">Orders</h1>
+          <p className="mt-1 text-sm text-zinc-500">Buy Now orders — {orders.length} total</p>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="Refresh orders" title="Refresh orders">
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
