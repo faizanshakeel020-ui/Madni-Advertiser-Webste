@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const defaultRecipient = "faizanshakeel020@gmail.com";
+const defaultRecipient = "shahbaziqbal233@gmail.com";
 
 function escapeHtml(value: unknown) {
   return String(value ?? "")
