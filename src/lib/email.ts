@@ -1,4 +1,4 @@
-const defaultRecipient = "madniad786@gmail.com";
+const defaultRecipient = "faizanshakeel020@gmail.com";
 const defaultSender = "Madni Advertiser <onboarding@resend.dev>";
 
 function escapeHtml(value: unknown) {
