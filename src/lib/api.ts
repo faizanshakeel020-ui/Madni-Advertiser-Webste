@@ -197,7 +197,7 @@ export async function adminStats(): Promise<{
   newQuotes: number;
   revenue: number;
 }> {
-  return jsonFetch("/api/admin/stats");
+  return jsonFetch(`/api/admin/stats?refresh=${Date.now()}`, { cache: "no-store" });
 }
 
 export async function adminFetchProducts(): Promise<Product[]> {
@@ -444,7 +444,7 @@ export async function adminDeletePortfolioCategory(
 }
 
 export async function adminFetchOrders(): Promise<Order[]> {
-  return jsonFetch("/api/admin/orders");
+  return jsonFetch(`/api/admin/orders?refresh=${Date.now()}`, { cache: "no-store" });
 }
 
 /** AI-write a LONG, SEO-optimized client-project case-study description. */
@@ -476,7 +476,7 @@ export async function adminUpdateOrderStatus(
 }
 
 export async function adminFetchQuotes(): Promise<QuoteRequest[]> {
-  return jsonFetch("/api/admin/quotes");
+  return jsonFetch(`/api/admin/quotes?refresh=${Date.now()}`, { cache: "no-store" });
 }
 
 export async function adminUpdateQuoteStatus(

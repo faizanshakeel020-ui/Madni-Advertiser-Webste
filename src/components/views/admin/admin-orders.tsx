@@ -39,6 +39,16 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
   const [detail, setDetail] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
@@ -76,8 +86,8 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
           <h1 className="font-display text-2xl font-bold text-zinc-900">Orders</h1>
           <p className="mt-1 text-sm text-zinc-500">Buy Now orders — {orders.length} total</p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="Refresh orders" title="Refresh orders">
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh orders" title="Refresh orders">
+          <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
         </Button>
       </div>
 

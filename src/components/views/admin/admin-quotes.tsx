@@ -37,6 +37,16 @@ const STATUS_STYLE: Record<string, string> = {
 export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refresh: () => void }) {
   const [detail, setDetail] = useState<QuoteRequest | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
@@ -62,8 +72,8 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
             {quotes.filter((q) => q.status === "NEW").length} new)
           </p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => refresh()} aria-label="Refresh quote requests" title="Refresh quote requests">
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh quote requests" title="Refresh quote requests">
+          <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
         </Button>
       </div>
 
