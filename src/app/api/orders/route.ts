@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
     void sendNotificationEmail({
       subject: `New order ${order.orderNumber} from ${order.customerName}`,
       replyTo: order.email,
+      idempotencyKey: `new-order/${order.id}`,
       html: `
         <h2>New order received</h2>
         <p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>

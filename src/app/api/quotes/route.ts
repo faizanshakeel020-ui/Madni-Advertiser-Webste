@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     void sendNotificationEmail({
       subject: `New quote request ${quote.reference} from ${quote.name}`,
       replyTo: quote.email,
+      idempotencyKey: `new-quote/${quote.id}`,
       html: `
         <h2>New quote request received</h2>
         <p><strong>Reference:</strong> ${escapeHtml(quote.reference)}</p>
