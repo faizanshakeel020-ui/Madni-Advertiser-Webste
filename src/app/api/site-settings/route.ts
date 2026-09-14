@@ -15,13 +15,18 @@ const fallbackAbout = {
 };
 
 export async function GET() {
-  const admin = await db.adminUser.findFirst({ select: { settings: true } });
-  const settings = (admin?.settings ?? {}) as { social?: { links?: { platform: string; url: string }[]; facebook?: string; instagram?: string }; about?: typeof fallbackAbout };
-  const stored = settings.social;
-  const links = stored?.links ?? [
-    ...(stored?.facebook ? [{ platform: "Facebook", url: stored.facebook }] : []),
-    ...(stored?.instagram ? [{ platform: "Instagram", url: stored.instagram }] : []),
-  ];
+  try {
+    const admin = await db.adminUser.findFirst({ select: { settings: true } });
+    const settings = (admin?.settings ?? {}) as { social?: { links?: { platform: string; url: string }[]; facebook?: string; instagram?: string }; about?: typeof fallbackAbout };
+    const stored = settings.social;
+    const links = stored?.links ?? [
+      ...(stored?.facebook ? [{ platform: "Facebook", url: stored.facebook }] : []),
+      ...(stored?.instagram ? [{ platform: "Instagram", url: stored.instagram }] : []),
+    ];
 
-  return NextResponse.json({ social: { links: links.length ? links : fallbackLinks }, about: { ...fallbackAbout, ...settings.about } });
+    return NextResponse.json({ social: { links: links.length ? links : fallbackLinks }, about: { ...fallbackAbout, ...settings.about } });
+  } catch (e) {
+    console.error("site-settings GET error", e);
+    return NextResponse.json({ social: { links: fallbackLinks }, about: fallbackAbout });
+  }
 }
