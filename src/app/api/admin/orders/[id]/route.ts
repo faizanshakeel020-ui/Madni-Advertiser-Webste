@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { OrderStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-auth";
 
-const VALID = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
+const VALID = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 
 /** PATCH /api/admin/orders/[id] — update status */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const existing = await db.order.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-    await db.order.update({ where: { id }, data: { status: status as (typeof VALID)[number] } });
+    await db.order.update({ where: { id }, data: { status: status as OrderStatus } });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("admin orders PATCH error", e);
@@ -33,8 +34,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
   try {
     const { id } = await params;
-    const existing = await db.order.findUnique({ where: { id }, select: { id: true } });
-    if (!existing) return NextResponse.json({ error: "Order not found" }, { status: 404 });
     await db.order.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e) {

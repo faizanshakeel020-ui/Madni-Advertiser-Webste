@@ -22,10 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminDeleteOrder, adminUpdateOrderStatus } from "@/lib/api";
+import { adminDeleteOrder, adminDeleteOrders, adminUpdateOrderStatus } from "@/lib/api";
 import { formatDateTime, formatPKR } from "@/lib/format";
 import { ORDER_STATUSES } from "@/lib/constants";
 import type { Order, OrderStatus } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STATUS_STYLE: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 hover:bg-amber-100",
@@ -35,8 +36,9 @@ const STATUS_STYLE: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800 hover:bg-red-100",
 };
 
-export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () => void }) {
+export function AdminOrders({ orders, refresh, onDeleted }: { orders: Order[]; refresh: () => void; onDeleted: (ids: string[]) => void }) {
   const [detail, setDetail] = useState<Order | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,6 +71,8 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
     setDeleting(true);
     try {
       await adminDeleteOrder(order.id);
+      onDeleted([order.id]);
+      setSelectedIds((current) => { const next = new Set(current); next.delete(order.id); return next; });
       toast.success("Order deleted");
       setDetail(null);
       refresh();
@@ -79,6 +83,25 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
     }
   };
 
+  const deleteSelected = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || !window.confirm(`Delete ${ids.length} selected order${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const result = await adminDeleteOrders(ids);
+      onDeleted(ids);
+      setSelectedIds(new Set());
+      toast.success(`${result.deleted} order${result.deleted === 1 ? "" : "s"} deleted`);
+      refresh();
+    } catch {
+      toast.error("Order deletion failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const allSelected = orders.length > 0 && selectedIds.size === orders.length;
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-4">
@@ -86,9 +109,12 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
           <h1 className="font-display text-2xl font-bold text-zinc-900">Orders</h1>
           <p className="mt-1 text-sm text-zinc-500">Buy Now orders — {orders.length} total</p>
         </div>
-        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh orders" title="Refresh orders">
-          <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={deleteSelected} disabled={deleting}><Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Delete {selectedIds.size}</Button>}
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh orders" title="Refresh orders">
+            <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
@@ -96,6 +122,9 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
+                <th className="w-12 px-4 py-3">
+                  <Checkbox checked={allSelected} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(orders.map((order) => order.id)) : new Set())} aria-label="Select all orders" />
+                </th>
                 <th className="px-4 py-3 font-bold">Order</th>
                 <th className="px-4 py-3 font-bold">Customer</th>
                 <th className="px-4 py-3 font-bold">Items</th>
@@ -108,6 +137,7 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
             <tbody className="divide-y">
               {orders.map((o) => (
                 <tr key={o.id} className="hover:bg-zinc-50/60">
+                  <td className="px-4 py-3"><Checkbox checked={selectedIds.has(o.id)} onCheckedChange={(checked) => setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(o.id); else next.delete(o.id); return next; })} aria-label={`Select order ${o.orderNumber}`} /></td>
                   <td className="px-4 py-3">
                     <p className="font-mono text-xs font-bold text-primary">{o.orderNumber}</p>
                     <p className="text-xs text-zinc-400">{formatDateTime(o.createdAt)}</p>
@@ -147,7 +177,7 @@ export function AdminOrders({ orders, refresh }: { orders: Order[]; refresh: () 
               ))}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-zinc-400">
                     No orders yet — they&apos;ll appear here when customers check out.
                   </td>
                 </tr>

@@ -189,6 +189,14 @@ export async function adminDeleteOrder(id: string): Promise<{ ok: boolean }> {
   return jsonFetch(`/api/admin/orders/${id}`, { method: "DELETE" });
 }
 
+export async function adminDeleteOrders(ids: string[]): Promise<{ ok: boolean; deleted: number }> {
+  return jsonFetch("/api/admin/orders", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export async function adminStats(): Promise<{
   products: number;
   orders: number;
