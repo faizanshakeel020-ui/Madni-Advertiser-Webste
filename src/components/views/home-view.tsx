@@ -145,13 +145,13 @@ export function HomeView() {
                   {/* caption — bottom left, inset clear of the side arrows */}
                   <div className="container-site absolute inset-x-0 bottom-0">
                     <div className="max-w-2xl pb-14 pl-12 pr-12 sm:pb-16 sm:pl-14 sm:pr-16 lg:pl-16">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
+                      <p className="hero-copy-text text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
                         {slide.eyebrow}
                       </p>
-                      <h1 className="mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
+                      <h1 className="hero-copy-text mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
                         {slide.title}
                       </h1>
-                      <p className="mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
+                      <p className="hero-copy-text mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
                         {slide.subtitle}
                       </p>
                       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
