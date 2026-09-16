@@ -497,3 +497,15 @@ export async function adminUpdateQuoteStatus(
     body: JSON.stringify({ status }),
   });
 }
+
+export async function adminDeleteQuote(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/quotes/${id}`, { method: "DELETE" });
+}
+
+export async function adminDeleteQuotes(ids: string[]): Promise<{ ok: boolean; deleted: number }> {
+  return jsonFetch("/api/admin/quotes", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}

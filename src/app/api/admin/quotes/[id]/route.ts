@@ -25,3 +25,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
+
+/** DELETE /api/admin/quotes/[id] — permanently delete a quote request */
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    const { id } = await params;
+    await db.quoteRequest.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("admin quotes DELETE error", e);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
+}

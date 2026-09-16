@@ -4,7 +4,7 @@
  * Admin — Quote Requests management (view custom/service quotes, update status).
  */
 import { useState } from "react";
-import { ClipboardList, ExternalLink, Mail, MapPin, Phone, RefreshCw, User } from "lucide-react";
+import { ClipboardList, ExternalLink, Mail, MapPin, Phone, RefreshCw, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminUpdateQuoteStatus } from "@/lib/api";
+import { adminDeleteQuote, adminDeleteQuotes, adminUpdateQuoteStatus } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { QUOTE_STATUSES } from "@/lib/constants";
 import type { QuoteRequest, QuoteStatus } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STATUS_STYLE: Record<string, string> = {
   NEW: "bg-amber-100 text-amber-800 hover:bg-amber-100",
@@ -34,9 +35,11 @@ const STATUS_STYLE: Record<string, string> = {
   CLOSED: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
 };
 
-export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refresh: () => void }) {
+export function AdminQuotes({ quotes, refresh, onDeleted }: { quotes: QuoteRequest[]; refresh: () => void; onDeleted: (ids: string[]) => void }) {
   const [detail, setDetail] = useState<QuoteRequest | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -62,6 +65,42 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
     }
   };
 
+  const deleteQuote = async (quote: QuoteRequest) => {
+    if (!window.confirm(`Delete quote request ${quote.reference}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      await adminDeleteQuote(quote.id);
+      onDeleted([quote.id]);
+      setSelectedIds((current) => { const next = new Set(current); next.delete(quote.id); return next; });
+      setDetail(null);
+      toast.success("Quote request deleted");
+      refresh();
+    } catch {
+      toast.error("Quote deletion failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteSelected = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || !window.confirm(`Delete ${ids.length} selected quote request${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const result = await adminDeleteQuotes(ids);
+      onDeleted(ids);
+      setSelectedIds(new Set());
+      toast.success(`${result.deleted} quote request${result.deleted === 1 ? "" : "s"} deleted`);
+      refresh();
+    } catch {
+      toast.error("Quote deletion failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const allSelected = quotes.length > 0 && selectedIds.size === quotes.length;
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-4">
@@ -72,9 +111,12 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
             {quotes.filter((q) => q.status === "NEW").length} new)
           </p>
         </div>
-        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh quote requests" title="Refresh quote requests">
-          <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={deleteSelected} disabled={deleting}><Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Delete {selectedIds.size}</Button>}
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refresh quote requests" title="Refresh quote requests">
+            <RefreshCw className={`h-4 w-4${refreshing ? " animate-spin" : ""}`} aria-hidden="true" />
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
@@ -82,6 +124,9 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
+                <th className="w-12 px-4 py-3">
+                  <Checkbox checked={allSelected} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(quotes.map((quote) => quote.id)) : new Set())} aria-label="Select all quote requests" />
+                </th>
                 <th className="px-4 py-3 font-bold">Reference</th>
                 <th className="px-4 py-3 font-bold">Customer</th>
                 <th className="px-4 py-3 font-bold">Service</th>
@@ -94,6 +139,7 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
             <tbody className="divide-y">
               {quotes.map((q) => (
                 <tr key={q.id} className="hover:bg-zinc-50/60">
+                  <td className="px-4 py-3"><Checkbox checked={selectedIds.has(q.id)} onCheckedChange={(checked) => setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(q.id); else next.delete(q.id); return next; })} aria-label={`Select quote request ${q.reference}`} /></td>
                   <td className="px-4 py-3">
                     <p className="font-mono text-xs font-bold text-primary">{q.reference}</p>
                     <p className="text-xs text-zinc-400">{formatDateTime(q.createdAt)}</p>
@@ -129,15 +175,13 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
                     </Select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button variant="outline" size="sm" className="font-bold" onClick={() => setDetail(q)}>
-                      View
-                    </Button>
+                    <div className="flex justify-end gap-2"><Button variant="outline" size="sm" className="font-bold" onClick={() => setDetail(q)}>View</Button><Button variant="outline" size="icon" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => deleteQuote(q)} disabled={deleting} aria-label={`Delete quote request ${q.reference}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button></div>
                   </td>
                 </tr>
               ))}
               {quotes.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-zinc-400">
                     No quote requests yet.
                   </td>
                 </tr>
@@ -221,6 +265,7 @@ export function AdminQuotes({ quotes, refresh }: { quotes: QuoteRequest[]; refre
                   </p>
                 </div>
               )}
+              <div className="flex justify-end border-t pt-4"><Button type="button" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => deleteQuote(detail)} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden="true" /> Delete quote request</Button></div>
             </>
           )}
         </DialogContent>

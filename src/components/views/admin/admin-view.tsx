@@ -280,7 +280,7 @@ export function AdminView() {
           )}
           {tab === "products" && <AdminProducts />}
           {tab === "orders" && <AdminOrders orders={orders} refresh={refresh} onDeleted={(ids) => setOrders((current) => current.filter((order) => !ids.includes(order.id)))} />}
-          {tab === "quotes" && <AdminQuotes quotes={quotes} refresh={refresh} />}
+          {tab === "quotes" && <AdminQuotes quotes={quotes} refresh={refresh} onDeleted={(ids) => setQuotes((current) => current.filter((quote) => !ids.includes(quote.id)))} />}
           {tab === "clients" && <AdminClients />}
           {tab === "services" && <AdminServices />}
           {tab === "portfolio" && <AdminPortfolio />}
