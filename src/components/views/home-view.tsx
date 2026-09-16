@@ -34,24 +34,24 @@ import type { Category, Client, Product } from "@/lib/types";
 const SLIDES = [
   {
     image: "/images/hero-1.png",
-    eyebrow: "Signage & Display Advertising",
-    title: "Signs That Make Your Business Shine",
+    eyebrow: "ADVANCED PRINTING",
+    title: "Digital UV - Printing",
     subtitle:
-      "Custom 3D, LED, acrylic and digital signage designed, fabricated and installed across Pakistan — for shops, offices, hotels, hospitals and homes.",
+      "High-quality prints with vibrant colors, sharp details, and durable finishes.",
   },
   {
     image: "/images/hero-2.png",
-    eyebrow: "Indoor Branding",
-    title: "Reception Walls That Wow Every Visitor",
+    eyebrow: "ILLUMINATED INTERIORS",
+    title: "Light Box & Barisol Stretch Ceiling",
     subtitle:
-      "Backlit logo walls, halo letters and complete interior branding — crafted in-house, installed after hours, guaranteed to impress.",
+      "Create stunning spaces with custom lighting and seamless illuminated ceilings.",
   },
   {
     image: "/images/hero-3.png",
-    eyebrow: "Digital Signage",
-    title: "Screens That Sell While You Sleep",
+    eyebrow: "PREMIUM SIGNAGE",
+    title: "3D Letter Signage",
     subtitle:
-      "LED video walls, digital menu boards and smart displays with cloud content management — change your message from your phone.",
+      "Custom 3D letters and illuminated signs that give your brand a bold presence.",
   },
 ];
 
