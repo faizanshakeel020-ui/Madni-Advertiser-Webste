@@ -34,21 +34,21 @@ import type { Category, Client, Product } from "@/lib/types";
 
 const SLIDES = [
   {
-    image: "/images/hero-1.jpg",
+    image: "/images/hero-1.png",
     eyebrow: "ADVANCED PRINTING",
     title: "Digital UV - Printing",
     subtitle:
       "High-quality prints with vibrant colors, sharp details, and durable finishes.",
   },
   {
-    image: "/images/hero-2.jpg",
+    image: "/images/hero-2.png",
     eyebrow: "ILLUMINATED INTERIORS",
     title: "Light Box & Barisol Stretch Ceiling",
     subtitle:
       "Create stunning spaces with custom lighting and seamless illuminated ceilings.",
   },
   {
-    image: "/images/hero-3.jpg",
+    image: "/images/hero-3.png",
     eyebrow: "PREMIUM SIGNAGE",
     title: "3D Letter Signage",
     subtitle:
@@ -57,9 +57,9 @@ const SLIDES = [
   {
     image: "/images/hero-4.png",
     eyebrow: "CUSTOM SIGNAGE",
-    title: "Signs That Make Your Brand Shine",
+    title: "Crafting Brand Impact",
     subtitle:
-      "From beauty studios to storefronts, we create polished signage that makes every business stand out.",
+      "Custom graphic design, precision printing, and architectural signage tailored for your brand.",
   },
 ];
 
