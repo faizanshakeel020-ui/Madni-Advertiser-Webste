@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-auth";
 
@@ -31,7 +32,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You can upload up to 20 images at once" }, { status: 400 });
     }
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    const useBlobStorage = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+    if (process.env.VERCEL && !useBlobStorage) {
+      return NextResponse.json(
+        { error: "Image storage is not configured. Add BLOB_READ_WRITE_TOKEN in Vercel." },
+        { status: 503 }
+      );
+    }
+    if (!useBlobStorage) await fs.mkdir(UPLOAD_DIR, { recursive: true });
     const urls: string[] = [];
 
     for (const value of uploads) {
@@ -45,8 +53,17 @@ export async function POST(req: NextRequest) {
       }
 
       const filename = `${Date.now()}-${randomUUID()}.${extension}`;
-      await fs.writeFile(path.join(UPLOAD_DIR, filename), Buffer.from(await file.arrayBuffer()));
-      urls.push(`/api/files/${filename}`);
+      if (useBlobStorage) {
+        const blob = await put(filename, file, {
+          access: "public",
+          contentType: file.type,
+          addRandomSuffix: false,
+        });
+        urls.push(blob.url);
+      } else {
+        await fs.writeFile(path.join(UPLOAD_DIR, filename), Buffer.from(await file.arrayBuffer()));
+        urls.push(`/api/files/${filename}`);
+      }
     }
 
     return NextResponse.json({ url: urls[0], urls });
