@@ -35,6 +35,7 @@ import type { Category, Client, Product } from "@/lib/types";
 const SLIDES = [
   {
     image: "/images/hero-1.png",
+    mobileImage: "/images/mhero-1.png",
     eyebrow: "ADVANCED PRINTING",
     title: "Digital UV - Printing",
     subtitle:
@@ -42,6 +43,7 @@ const SLIDES = [
   },
   {
     image: "/images/hero-2.png",
+    mobileImage: "/images/mhero-2.png",
     eyebrow: "ILLUMINATED INTERIORS",
     title: "Light Box & Barisol Stretch Ceiling",
     subtitle:
@@ -49,6 +51,7 @@ const SLIDES = [
   },
   {
     image: "/images/hero-3.png",
+    mobileImage: "/images/mhero-3.png",
     eyebrow: "PREMIUM SIGNAGE",
     title: "3D Letter Signage",
     subtitle:
@@ -56,6 +59,7 @@ const SLIDES = [
   },
   {
     image: "/images/hero-4.png",
+    mobileImage: "/images/mhero-4.png",
     eyebrow: "CUSTOM SIGNAGE",
     title: "Crafting Brand Impact",
     subtitle:
@@ -144,7 +148,17 @@ export function HomeView() {
                     fill
                     sizes="100vw"
                     quality={100}
-                    className="h-full w-full object-cover"
+                    className="hidden h-full w-full object-cover sm:block"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    fetchPriority={i === 0 ? "high" : "auto"}
+                  />
+                  <Image
+                    src={slide.mobileImage}
+                    alt={slide.title}
+                    fill
+                    sizes="100vw"
+                    quality={100}
+                    className="h-full w-full object-cover sm:hidden"
                     loading={i === 0 ? "eager" : "lazy"}
                     fetchPriority={i === 0 ? "high" : "auto"}
                   />
