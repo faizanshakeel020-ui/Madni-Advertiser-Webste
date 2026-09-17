@@ -59,7 +59,7 @@ const SLIDES = [
     eyebrow: "CUSTOM SIGNAGE",
     title: "Crafting Brand Impact",
     subtitle:
-      "Custom graphic design, precision printing, and architectural signage tailored for your brand.",
+      "Transform your storefront and indoor spaces with custom-crafted visual displays.",
   },
 ];
 
@@ -117,7 +117,7 @@ export function HomeView() {
   useEffect(() => {
     const t = setInterval(() => embla?.scrollNext(), 6000);
     return () => clearInterval(t);
-  }, [embla]);
+  }, [embla, selected]);
 
   useEffect(() => {
     if (!embla) return;
