@@ -31,14 +31,7 @@ export async function POST(req: NextRequest) {
     if (uploads.length > 20) {
       return NextResponse.json({ error: "You can upload up to 20 images at once" }, { status: 400 });
     }
-
-    const useBlobStorage = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-    if (process.env.VERCEL && !useBlobStorage) {
-      return NextResponse.json(
-        { error: "Image storage is not configured. Add BLOB_READ_WRITE_TOKEN in Vercel." },
-        { status: 503 }
-      );
-    }
+    const useBlobStorage = Boolean(process.env.VERCEL);
     if (!useBlobStorage) await fs.mkdir(UPLOAD_DIR, { recursive: true });
     const urls: string[] = [];
 
