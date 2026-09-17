@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import {
   ArrowRight,
@@ -33,25 +34,32 @@ import type { Category, Client, Product } from "@/lib/types";
 
 const SLIDES = [
   {
-    image: "/images/hero-1.png",
+    image: "/images/hero-1.jpg",
     eyebrow: "ADVANCED PRINTING",
     title: "Digital UV - Printing",
     subtitle:
       "High-quality prints with vibrant colors, sharp details, and durable finishes.",
   },
   {
-    image: "/images/hero-2.png",
+    image: "/images/hero-2.jpg",
     eyebrow: "ILLUMINATED INTERIORS",
     title: "Light Box & Barisol Stretch Ceiling",
     subtitle:
       "Create stunning spaces with custom lighting and seamless illuminated ceilings.",
   },
   {
-    image: "/images/hero-3.png",
+    image: "/images/hero-3.jpg",
     eyebrow: "PREMIUM SIGNAGE",
     title: "3D Letter Signage",
     subtitle:
       "Custom 3D letters and illuminated signs that give your brand a bold presence.",
+  },
+  {
+    image: "/images/hero-4.png",
+    eyebrow: "CUSTOM SIGNAGE",
+    title: "Signs That Make Your Brand Shine",
+    subtitle:
+      "From beauty studios to storefronts, we create polished signage that makes every business stand out.",
   },
 ];
 
@@ -130,9 +138,12 @@ export function HomeView() {
               <div key={i} className="relative min-w-0 flex-[0_0_100%]">
                 {/* hero fills the open viewport (minus header bars) so the caption is always readable on load */}
                 <div className="relative h-[calc(100svh-128px)] min-h-[400px] max-h-[620px] w-full sm:h-[calc(100svh-144px)] lg:h-[calc(100svh-152px)]">
-                  <img
+                  <Image
                     src={slide.image}
                     alt={slide.title}
+                    fill
+                    sizes="100vw"
+                    quality={100}
                     className="h-full w-full object-cover"
                     loading={i === 0 ? "eager" : "lazy"}
                     fetchPriority={i === 0 ? "high" : "auto"}
@@ -145,15 +156,17 @@ export function HomeView() {
                   {/* caption — bottom left, inset clear of the side arrows */}
                   <div className="container-site absolute inset-x-0 bottom-0">
                     <div className="max-w-2xl pb-14 pl-12 pr-12 sm:pb-16 sm:pl-14 sm:pr-16 lg:pl-16">
-                      <p className="hero-copy-text text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
-                        {slide.eyebrow}
-                      </p>
-                      <h1 className="hero-copy-text mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
-                        {slide.title}
-                      </h1>
-                      <p className="hero-copy-text mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
-                        {slide.subtitle}
-                      </p>
+                      <div className="w-fit max-w-full">
+                        <p className="hero-copy-text text-[11px] font-bold uppercase tracking-[0.25em] text-white">
+                          {slide.eyebrow}
+                        </p>
+                        <h1 className="hero-copy-text mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
+                          {slide.title}
+                        </h1>
+                        <p className="hero-copy-text mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
+                          {slide.subtitle}
+                        </p>
+                      </div>
                       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                         <Button
                           size="lg"
