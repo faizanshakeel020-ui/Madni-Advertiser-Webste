@@ -37,7 +37,7 @@ const SLIDES = [
     image: "/images/hero-1.png",
     mobileImage: "/images/mhero-1.png",
     eyebrow: "ADVANCED PRINTING",
-    title: "Digital UV - Printing",
+    title: "Digital Flex/Offset & UV-Printing",
     subtitle:
       "High-quality prints with vibrant colors, sharp details, and durable finishes.",
   },
@@ -45,7 +45,7 @@ const SLIDES = [
     image: "/images/hero-2.png",
     mobileImage: "/images/mhero-2.png",
     eyebrow: "ILLUMINATED INTERIORS",
-    title: "Light Box & Barisol Stretch Ceiling",
+    title: "Barisol Stretch Ceiling & Light Box",
     subtitle:
       "Create stunning spaces with custom lighting and seamless illuminated ceilings.",
   },
@@ -61,7 +61,7 @@ const SLIDES = [
     image: "/images/hero-4.png",
     mobileImage: "/images/mhero-4.png",
     eyebrow: "CUSTOM SIGNAGE",
-    title: "Crafting Brand Impact",
+    title: "Office/Brand Logo & Home Nameplates",
     subtitle:
       "Transform your storefront and indoor spaces with custom-crafted visual displays.",
   },
@@ -162,45 +162,10 @@ export function HomeView() {
                     loading={i === 0 ? "eager" : "lazy"}
                     fetchPriority={i === 0 ? "high" : "auto"}
                   />
-                  {/* subtle bottom gradient for caption/arrows legibility */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent"
-                    aria-hidden="true"
-                  />
-                  {/* caption — bottom left, inset clear of the side arrows */}
-                  <div className="container-site absolute inset-x-0 bottom-0">
-                    <div className="max-w-2xl pb-14 pl-12 pr-12 sm:pb-16 sm:pl-14 sm:pr-16 lg:pl-16">
-                      <div className="w-fit max-w-full">
-                        <p className="hero-copy-text text-[11px] font-bold uppercase tracking-[0.25em] text-white">
-                          {slide.eyebrow}
-                        </p>
-                        <h1 className="hero-copy-text mt-2 font-display text-2xl font-bold leading-[1.12] text-white sm:text-4xl lg:text-5xl">
-                          {slide.title}
-                        </h1>
-                        <p className="hero-copy-text mt-3 hidden max-w-lg text-sm leading-relaxed text-zinc-200/90 sm:block">
-                          {slide.subtitle}
-                        </p>
-                      </div>
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        <Button
-                          size="lg"
-                          className="h-11 rounded-[4px] px-7 text-sm font-bold uppercase tracking-wider"
-                          onClick={() => navigate("/shop")}
-                        >
-                          <ShoppingCart className="mr-2 h-4 w-4" aria-hidden="true" />
-                          Shop Products
-                        </Button>
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          className="h-11 rounded-[4px] border-white/40 bg-white/10 px-7 text-sm font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-white hover:text-zinc-900"
-                          onClick={() => navigate("/quote")}
-                        >
-                          Get a Free Quote
-                          <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    </div>
+                  <div className="absolute inset-x-0 bottom-0 top-[55%] bg-[#111111]/60">
+                    <h1 className="flex h-full items-center justify-center px-4 text-center font-display text-2xl font-bold tracking-wide text-white sm:text-4xl md:text-5xl lg:text-6xl">
+                      {slide.title}
+                    </h1>
                   </div>
                 </div>
               </div>
