@@ -184,10 +184,10 @@ export function AdminProducts() {
       const result = await adminDeleteProducts(ids);
       setProducts((current) => current.filter((p) => !selectedProductIds.has(p.id)));
       setSelectedProductIds(new Set());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["products"] }),
-        queryClient.invalidateQueries({ queryKey: ["categories"] }),
-      ]);
+      const refreshedCategories = await fetchCategories();
+      setCats(refreshedCategories);
+      queryClient.setQueryData(["categories"], refreshedCategories);
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success(`${result.deleted} product${result.deleted === 1 ? "" : "s"} deleted`);
       setBulkDeleteOpen(false);
     } catch (e) {
@@ -422,6 +422,9 @@ export function AdminProducts() {
         queryClient.invalidateQueries({ queryKey: ["products"] }),
         queryClient.invalidateQueries({ queryKey: ["categories"] }),
       ]);
+      const refreshedCategories = await fetchCategories();
+      setCats(refreshedCategories);
+      queryClient.setQueryData(["categories"], refreshedCategories);
       toast.success(editing.id ? "Product updated" : "Product created");
       setEditOpen(false);
       await load();
@@ -942,6 +945,9 @@ export function AdminProducts() {
                     queryClient.invalidateQueries({ queryKey: ["products"] }),
                     queryClient.invalidateQueries({ queryKey: ["categories"] }),
                   ]);
+                  const refreshedCategories = await fetchCategories();
+                  setCats(refreshedCategories);
+                  queryClient.setQueryData(["categories"], refreshedCategories);
                   toast.success("Product deleted");
                   setProducts((ps) => ps.filter((p) => p.id !== deleteTarget.id));
                   setSelectedProductIds((ids) => {
