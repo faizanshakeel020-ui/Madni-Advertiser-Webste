@@ -64,14 +64,16 @@ export function Header() {
     setMobileOpen(false);
   }, [route.path, route.query.q, route.query.cat, route.query.sub]);
 
+  const shopCategories = cats.filter((category) => category.hasProductImage);
+
   const isActive = (href: string) =>
     href === "/" ? route.path === "/" : route.path.startsWith(href);
 
   // Active category inside the Shop mega menu: user-hovered → current shop category → first
   const activeShopCat =
-    cats.find((c) => c.slug === shopCat) ??
-    cats.find((c) => c.slug === route.query.cat) ??
-    cats[0];
+    shopCategories.find((c) => c.slug === shopCat) ??
+    shopCategories.find((c) => c.slug === route.query.cat) ??
+    shopCategories[0];
 
   // Active service inside the Services mega menu: user-hovered → current service page → first
   const activeService =
@@ -240,7 +242,7 @@ export function Header() {
                           Shop
                         </AccordionTrigger>
                         <AccordionContent className="pb-3">
-                          {cats.map((c) => (
+                          {shopCategories.map((c) => (
                             <div key={c.slug} className="mb-1">
                               <button
                                 onClick={() => navigate(`/shop?cat=${c.slug}`)}
@@ -615,7 +617,7 @@ export function Header() {
                   className="max-h-[380px] overflow-y-auto rounded-xl bg-zinc-50 p-2 scrollbar-thin"
                   aria-label="Shop categories"
                 >
-                  {cats.map((c) => {
+                  {shopCategories.map((c) => {
                     const active = activeShopCat?.slug === c.slug;
                     return (
                       <button
