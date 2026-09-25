@@ -12,6 +12,7 @@ import {
   Search,
   Sparkles,
   Star,
+  Tags,
   Trash2,
   Upload,
   Wand2,
@@ -49,11 +50,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
+  adminDeleteCategory,
   adminCategorizeProduct,
   adminDeleteProduct,
+  adminDeleteProducts,
   adminFetchProducts,
   adminGenerateDescription,
+  adminSaveCategory,
   adminSaveProduct,
   fetchCategories,
   uploadImages,
@@ -105,6 +110,10 @@ export function AdminProducts() {
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [section, setSection] = useState<"products" | "categories">("products");
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -156,6 +165,37 @@ export function AdminProducts() {
       ),
     [products, search]
   );
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedProductIds.has(p.id));
+  const toggleProduct = (id: string, checked: boolean) => {
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const deleteSelected = async () => {
+    const ids = [...selectedProductIds];
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      const result = await adminDeleteProducts(ids);
+      setProducts((current) => current.filter((p) => !selectedProductIds.has(p.id)));
+      setSelectedProductIds(new Set());
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["categories"] }),
+      ]);
+      toast.success(`${result.deleted} product${result.deleted === 1 ? "" : "s"} deleted`);
+      setBulkDeleteOpen(false);
+    } catch (e) {
+      toast.error("Bulk delete failed", { description: e instanceof Error ? e.message : "" });
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   /** Ask the backend to auto-assign category + subcategory from the product name/description. */
   const runDetect = useCallback(
@@ -418,10 +458,39 @@ export function AdminProducts() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
+      <div className="flex flex-wrap gap-2 border-b pb-3" role="tablist" aria-label="Product management sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={section === "products"}
+          onClick={() => setSection("products")}
+          className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${section === "products" ? "bg-primary text-primary-foreground" : "border bg-white text-zinc-600 hover:border-primary/50 hover:text-primary"}`}
+        >
+          Products ({products.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={section === "categories"}
+          onClick={() => setSection("categories")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${section === "categories" ? "bg-primary text-primary-foreground" : "border bg-white text-zinc-600 hover:border-primary/50 hover:text-primary"}`}
+        >
+          <Tags className="h-4 w-4" aria-hidden="true" /> Categories ({cats.length})
+        </button>
+      </div>
+
+      {section === "products" ? (
+        <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative max-w-sm flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…" className="pl-9" />
+        </div>
+        {selectedProductIds.size > 0 && (
+          <Button variant="destructive" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Delete selected ({selectedProductIds.size})
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -430,6 +499,22 @@ export function AdminProducts() {
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="border-b bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
+                <th className="w-10 px-4 py-3">
+                  <Checkbox
+                      checked={allFilteredSelected}
+                      onCheckedChange={(checked) => {
+                        setSelectedProductIds((current) => {
+                          const next = new Set(current);
+                          for (const p of filtered) {
+                            if (checked) next.add(p.id);
+                            else next.delete(p.id);
+                          }
+                          return next;
+                        });
+                    }}
+                    aria-label={allFilteredSelected ? "Deselect all filtered products" : "Select all filtered products"}
+                  />
+                </th>
                 <th className="px-4 py-3 font-bold">Product</th>
                 <th className="px-4 py-3 font-bold">Category</th>
                 <th className="px-4 py-3 font-bold">Type</th>
@@ -443,13 +528,20 @@ export function AdminProducts() {
               {loading
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i}>
-                      <td colSpan={7} className="px-4 py-3">
+                        <td colSpan={8} className="px-4 py-3">
                         <Skeleton className="h-10 w-full" />
                       </td>
                     </tr>
                   ))
                 : filtered.map((p) => (
                     <tr key={p.id} className="hover:bg-zinc-50/60">
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedProductIds.has(p.id)}
+                          onCheckedChange={(checked) => toggleProduct(p.id, Boolean(checked))}
+                          aria-label={`Select ${p.name}`}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           { }
@@ -496,7 +588,7 @@ export function AdminProducts() {
                   ))}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-zinc-400">
                     No products match “{search}”.
                   </td>
                 </tr>
@@ -505,6 +597,18 @@ export function AdminProducts() {
           </table>
         </div>
       </div>
+        </>
+      ) : (
+        <AdminProductCategories
+          categories={cats}
+          onChanged={async () => {
+            await Promise.all([
+              fetchCategories().then(setCats),
+              queryClient.invalidateQueries({ queryKey: ["categories"] }),
+            ]);
+          }}
+        />
+      )}
 
       {/* ---------- Editor dialog ---------- */}
       <Dialog open={editOpen} onOpenChange={(o) => !o && setEditOpen(false)}>
@@ -525,7 +629,11 @@ export function AdminProducts() {
                     value={editing.name}
                     onChange={(e) =>
                       setEditing((s) =>
-                        s && !s.id ? { ...s, name: e.target.value, slug: slugify(e.target.value) } : { ...s, name: e.target.value }
+                        s
+                          ? !s.id
+                            ? { ...s, name: e.target.value, slug: slugify(e.target.value) }
+                            : { ...s, name: e.target.value }
+                          : s
                       )
                     }
                     placeholder="e.g. LED Edge-Lit Name Plate"
@@ -544,7 +652,7 @@ export function AdminProducts() {
                           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> Detecting…
                         </span>
                       )}
-                      {!detecting && detectedLabel && !catTouched.current && !editing.id && (
+                      {!detecting && detectedLabel && !editing.id && (
                         <span className="flex items-center gap-1 text-[11px] font-bold text-primary">
                           <Sparkles className="h-3 w-3" aria-hidden="true" /> Auto-assigned
                         </span>
@@ -830,9 +938,17 @@ export function AdminProducts() {
                 if (!deleteTarget) return;
                 try {
                   await adminDeleteProduct(deleteTarget.id);
-                  await queryClient.invalidateQueries({ queryKey: ["products"] });
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ["products"] }),
+                    queryClient.invalidateQueries({ queryKey: ["categories"] }),
+                  ]);
                   toast.success("Product deleted");
                   setProducts((ps) => ps.filter((p) => p.id !== deleteTarget.id));
+                  setSelectedProductIds((ids) => {
+                    const next = new Set(ids);
+                    next.delete(deleteTarget.id);
+                    return next;
+                  });
                 } catch {
                   toast.error("Delete failed");
                 } finally {
@@ -842,6 +958,217 @@ export function AdminProducts() {
             >
               Delete
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={(open) => !bulkDeleting && setBulkDeleteOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedProductIds.size} selected products?</AlertDialogTitle>
+            <AlertDialogDescription>
+              These products will be permanently removed from the shop. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={(event) => {
+              event.preventDefault();
+              void deleteSelected();
+            }} disabled={bulkDeleting}>
+              {bulkDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+              Delete Products
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function AdminProductCategories({
+  categories,
+  onChanged,
+}: {
+  categories: Category[];
+  onChanged: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+
+  const openNew = () => {
+    setCategoryOpen(true);
+    setEditing(null);
+    setName("");
+    setSlug("");
+    setDescription("");
+    setImage("");
+    setSortOrder(String(categories.length + 1));
+  };
+
+  const openEdit = (category: Category) => {
+    setCategoryOpen(true);
+    setEditing(category);
+    setName(category.name);
+    setSlug(category.slug);
+    setDescription(category.description ?? "");
+    setImage(category.image ?? "");
+    setSortOrder(String(category.sortOrder));
+  };
+
+  const save = async () => {
+    if (!name.trim()) return toast.error("Category name is required");
+    setSaving(true);
+    try {
+      await adminSaveCategory({
+        id: editing?.id,
+        name: name.trim(),
+        slug: slug.trim() || slugify(name),
+        description: description.trim() || null,
+        image: image.trim() || null,
+        sortOrder: Number(sortOrder) || 0,
+      });
+      toast.success(editing ? "Category updated" : "Category created");
+      setEditing(null);
+      setName("");
+      setCategoryOpen(false);
+      await onChanged();
+    } catch (e) {
+      toast.error("Category save failed", { description: e instanceof Error ? e.message : "" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!deleteTarget) return;
+    try {
+      await adminDeleteCategory(deleteTarget.id);
+      toast.success("Category deleted");
+      setDeleteTarget(null);
+      await onChanged();
+    } catch (e) {
+      toast.error("Could not delete category", { description: e instanceof Error ? e.message : "" });
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold text-zinc-900">Product Categories</h2>
+          <p className="mt-1 text-sm text-zinc-500">Manage the categories and subcategories used in the shop.</p>
+        </div>
+        <Button onClick={openNew}><Plus className="mr-1.5 h-4 w-4" aria-hidden="true" /> Add Category</Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {categories.map((category) => (
+          <section key={category.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-base font-bold text-zinc-900">{category.name}</h3>
+                <p className="mt-0.5 font-mono text-xs text-zinc-400">/{category.slug}</p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(category)} aria-label={`Edit ${category.name}`}>
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => setDeleteTarget(category)} aria-label={`Delete ${category.name}`}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+            {category.description && <p className="mt-3 line-clamp-2 text-sm text-zinc-500">{category.description}</p>}
+            <div className="mt-4 border-t pt-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                {category.productCount ?? 0} products · {category.subcategories?.length ?? 0} subcategories
+              </p>
+              {!!category.subcategories?.length && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {category.subcategories.map((subcategory) => (
+                    <Badge key={subcategory.id} variant="secondary" className="font-medium">
+                      {subcategory.name} ({subcategory.productCount ?? 0})
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+        {categories.length === 0 && <p className="col-span-full rounded-xl border bg-white p-10 text-center text-sm text-zinc-400">No product categories yet. Add one to organize the shop.</p>}
+      </div>
+
+      <Dialog open={categoryOpen} onOpenChange={(open) => {
+        if (!open && !saving) {
+          setCategoryOpen(false);
+          setEditing(null);
+          setName("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Category" : "Add Category"}</DialogTitle>
+            <DialogDescription>Categories organize products and appear in the public shop navigation.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Category Name *</Label>
+              <Input value={name} onChange={(event) => {
+                setName(event.target.value);
+                if (!editing) setSlug(slugify(event.target.value));
+              }} placeholder="e.g. LED Signs" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>URL Slug</Label>
+              <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} placeholder="led-signs" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description</Label>
+              <Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Short description for this category" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Image URL</Label>
+                <Input value={image} onChange={(event) => setImage(event.target.value)} placeholder="/images/category.png" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sort Order</Label>
+                <Input type="number" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} placeholder="1" />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => { setCategoryOpen(false); setEditing(null); setName(""); }} disabled={saving}>Cancel</Button>
+            <Button onClick={() => void save()} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+              {editing ? "Save Changes" : "Create Category"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Only empty categories can be deleted. Move or delete its products and subcategories first.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={(event) => {
+              event.preventDefault();
+              void remove();
+            }}>Delete Category</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

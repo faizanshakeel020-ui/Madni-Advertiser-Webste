@@ -1,23 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, MapPin, Maximize2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Briefcase, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SectionHeading } from "@/components/site/section-heading";
 import { useRoute } from "@/lib/router";
 import { useContent } from "@/lib/content";
 import { MediaImg } from "@/components/site/media-img";
-import type { PortfolioProject } from "@/lib/types";
+import { fetchClients } from "@/lib/api";
+import type { Client, ClientProject } from "@/lib/types";
+
+function projectImages(project: ClientProject): string[] {
+  return project.images.length ? project.images : ["/images/proj-building.png"];
+}
 
 export function PortfolioView() {
   const { route, navigate } = useRoute();
-  const { portfolio: PORTFOLIO, portfolioCategories: PORTFOLIO_CATEGORIES } = useContent();
+  const { portfolioCategories: PORTFOLIO_CATEGORIES } = useContent();
   const filter = route.query.cat ?? "All";
-  const [lightbox, setLightbox] = useState<PortfolioProject | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
 
-  const projects = filter === "All" ? PORTFOLIO : PORTFOLIO.filter((p) => p.category === filter);
+  useEffect(() => {
+    let active = true;
+    fetchClients()
+      .then((rows) => active && setClients(rows))
+      .catch(() => active && setClients([]))
+      .finally(() => active && setLoadingClients(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const projects = useMemo(() => {
+    const clientProjects = clients.flatMap((client) =>
+      client.projects.map((project) => ({ client, project }))
+    );
+    const category = filter === "All" ? null : filter;
+    if (!category) {
+      return clientProjects.map(({ client, project }) => ({
+        client,
+        project,
+        category: project.portfolioCategories?.join(", ") || "Client Project",
+      }));
+    }
+
+    const matched = clientProjects.flatMap(({ client, project }) => {
+      const matchedCategory = project.portfolioCategories?.includes(category) ? category : null;
+      return matchedCategory ? [{ client, project, category: matchedCategory }] : [];
+    });
+
+    return matched;
+  }, [clients, filter]);
 
   const setFilter = (c: string) => {
     navigate(c === "All" ? "/portfolio" : `/portfolio?cat=${c}`, { replace: true });
@@ -44,37 +80,57 @@ export function PortfolioView() {
           ))}
         </div>
 
-        {/* Grid */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setLightbox(p)}
-              className="group relative overflow-hidden rounded-2xl text-left shadow-sm transition-shadow hover:shadow-lg"
-              aria-label={`View ${p.title}`}
-            >
-              <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
-                { }
-                <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent" aria-hidden="true" />
-              <div className="absolute left-3 top-3">
-                <Badge variant="secondary" className="bg-white/90 text-zinc-800 hover:bg-white/90">{p.category}</Badge>
-              </div>
-              <div className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
-                <Maximize2 className="h-4 w-4" aria-hidden="true" />
-              </div>
-              <div className="absolute inset-x-0 bottom-0 p-4">
-                <p className="font-display text-base font-bold text-white">{p.title}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-300">
-                  <MapPin className="h-3 w-3" aria-hidden="true" /> {p.client} · {p.city}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
+        {loadingClients ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="aspect-[4/3] rounded-2xl" />)}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map(({ client, project, category }) => (
+              <article key={`${client.id}-${project.id}-${category}`} className="overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => client.slug && navigate(`/casestudy/portfolio/${client.slug}`)}
+                  className="group relative block aspect-[4/3] w-full overflow-hidden bg-zinc-100 text-left"
+                  aria-label={`View ${project.title} for ${client.name}`}
+                >
+                  <MediaImg src={projectImages(project)[0]} alt={project.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" aria-hidden="true" />
+                  <Badge variant="secondary" className="absolute left-3 top-3 bg-white/90 text-zinc-800 hover:bg-white/90">{category}</Badge>
+                  {project.images.length > 1 && (
+                    <span className="absolute right-3 top-3 rounded-full bg-zinc-950/75 px-2.5 py-1 text-xs font-bold text-white">
+                      {project.images.length} photos
+                    </span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <p className="font-display text-base font-bold text-white">{project.title}</p>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-300">
+                      <Briefcase className="h-3 w-3" aria-hidden="true" /> {client.name}
+                    </p>
+                  </div>
+                </button>
+                <div className="p-4">
+                  <p className="line-clamp-3 text-sm leading-6 text-zinc-600">{project.description}</p>
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3 text-xs text-zinc-500">
+                    {client.industry && <span className="truncate">{client.industry}</span>}
+                    {project.year && <span>{project.year}</span>}
+                    {client.slug && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/casestudy/portfolio/${client.slug}`)}
+                        className="ml-auto inline-flex shrink-0 items-center gap-1 font-bold text-primary hover:underline"
+                      >
+                        Full project details <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
-        {projects.length === 0 && (
+        {!loadingClients && projects.length === 0 && (
           <p className="py-16 text-center text-sm text-zinc-500">No projects in this category yet.</p>
         )}
       </div>
@@ -91,36 +147,6 @@ export function PortfolioView() {
         </div>
       </div>
 
-      {/* Lightbox */}
-      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
-        <DialogContent className="max-w-3xl border-zinc-800 bg-zinc-950 p-0 sm:rounded-2xl">
-          {lightbox && (
-            <>
-              <DialogTitle className="sr-only">{lightbox.title}</DialogTitle>
-              <DialogDescription className="sr-only">
-                {lightbox.description} — {lightbox.client}, {lightbox.city}
-              </DialogDescription>
-              { }
-              <MediaImg src={lightbox.image} alt={lightbox.title} loading="eager" className="max-h-[60vh] w-full rounded-t-xl object-cover" />
-              <div className="relative p-5 text-white">
-                <button
-                  onClick={() => setLightbox(null)}
-                  className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-zinc-300 hover:bg-white/20"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <Badge className="bg-primary text-primary-foreground hover:bg-primary">{lightbox.category}</Badge>
-                <h3 className="mt-2 font-display text-xl font-bold">{lightbox.title}</h3>
-                <p className="mt-1 text-sm text-zinc-400">
-                  {lightbox.client} · <MapPin className="inline h-3 w-3" aria-hidden="true" /> {lightbox.city}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-300">{lightbox.description}</p>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

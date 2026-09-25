@@ -226,6 +226,40 @@ export async function adminDeleteProduct(id: string): Promise<{ ok: boolean }> {
   return jsonFetch(`/api/admin/products/${id}`, { method: "DELETE" });
 }
 
+export async function adminDeleteProducts(ids: string[]): Promise<{ ok: boolean; deleted: number }> {
+  const results = await Promise.all(
+    Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) =>
+      jsonFetch<{ ok: boolean; deleted: number }>("/api/admin/products", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ids.slice(i * 100, (i + 1) * 100) }),
+      })
+    )
+  );
+  return { ok: true, deleted: results.reduce((sum, result) => sum + result.deleted, 0) };
+}
+
+export type AdminCategoryPayload = {
+  id?: string;
+  name: string;
+  slug?: string;
+  description?: string | null;
+  image?: string | null;
+  sortOrder?: number;
+};
+
+export async function adminSaveCategory(data: AdminCategoryPayload): Promise<Category> {
+  return jsonFetch(data.id ? `/api/admin/categories/${data.id}` : "/api/admin/categories", {
+    method: data.id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteCategory(id: string): Promise<{ ok: boolean }> {
+  return jsonFetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+}
+
 // ---------- Admin: clients & their projects ----------
 
 export type AdminClientPayload = {
@@ -259,6 +293,7 @@ export type AdminClientProjectPayload = {
   title: string;
   description: string;
   images: string[];
+  portfolioCategories?: string[];
   year?: number | null;
 };
 

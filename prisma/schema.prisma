@@ -134,15 +134,16 @@ model Client {
 
 // ---- Projects delivered for a client (shown on logo click) ----
 model ClientProject {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  images      String   @default("[]") // JSON array of image paths — first is the main one
-  year        Int?
-  sortOrder   Int      @default(0)
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  id                String   @id @default(cuid())
+  title             String
+  description       String
+  images            String   @default("[]") // JSON array of image paths — first is the main one
+  portfolioCategory  String   @default("[]") // JSON array of portfolio category names; accepts legacy single values
+  year              Int?
+  sortOrder         Int      @default(0)
+  clientId          String
+  client            Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
 }
 
 // ---- Service pillars (Services page, mega menu, home, quote form) ----

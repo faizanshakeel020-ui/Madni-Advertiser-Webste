@@ -144,6 +144,7 @@ export type ClientProject = {
   title: string;
   description: string;
   images: string[]; // first image is the main one
+  portfolioCategories?: string[];
   year: number | null;
   sortOrder: number;
 };

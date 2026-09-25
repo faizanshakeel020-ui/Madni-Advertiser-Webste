@@ -28,6 +28,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
         ...(images !== undefined && { images }),
+        ...((b.portfolioCategories !== undefined || b.portfolioCategory !== undefined) && {
+          portfolioCategory: JSON.stringify(
+            Array.isArray(b.portfolioCategories)
+              ? [...new Set(b.portfolioCategories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter(Boolean))]
+              : typeof b.portfolioCategory === "string" && b.portfolioCategory.trim()
+                ? [b.portfolioCategory.trim()]
+                : []
+          ),
+        }),
         ...(b.year !== undefined && {
           year: Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2200 ? Math.round(yearNum) : null,
         }),

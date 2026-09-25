@@ -21,6 +21,28 @@ export async function GET() {
   }
 }
 
+/** DELETE /api/admin/products — permanently delete multiple products */
+export async function DELETE(req: NextRequest) {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    const body = (await req.json()) as { ids?: unknown };
+    const ids = Array.isArray(body.ids) && body.ids.every((id): id is string => typeof id === "string")
+      ? [...new Set(body.ids)]
+      : [];
+    if (ids.length === 0 || ids.length > 100) {
+      return NextResponse.json({ error: "Provide between 1 and 100 product IDs" }, { status: 400 });
+    }
+
+    const result = await db.product.deleteMany({ where: { id: { in: ids } } });
+    return NextResponse.json({ ok: true, deleted: result.count });
+  } catch (e) {
+    console.error("admin products bulk DELETE error", e);
+    return NextResponse.json({ error: "Bulk delete failed" }, { status: 500 });
+  }
+}
+
 /** POST /api/admin/products — create */
 export async function POST(req: NextRequest) {
   if (!(await isAdminRequest())) {

@@ -52,6 +52,7 @@ import {
 } from "@/lib/api";
 import type { GenerateDescriptionResponse } from "@/lib/api";
 import { slugify } from "@/lib/format";
+import { useContent } from "@/lib/content";
 import type { Client, ClientProject } from "@/lib/types";
 
 type ClientEdit = {
@@ -69,12 +70,14 @@ type ProjectEdit = {
   title: string;
   description: string;
   images: string[];
+  portfolioCategories: string[];
   year: string;
 };
 
 const emptyClient: ClientEdit = { name: "", slug: "", logo: "", industry: "" };
 
 export function AdminClients() {
+  const { portfolioCategories } = useContent();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -211,6 +214,7 @@ export function AdminClients() {
       title: "",
       description: "",
       images: [],
+      portfolioCategories: [],
       year: String(new Date().getFullYear()),
     });
     setProjectOpen(true);
@@ -229,6 +233,7 @@ export function AdminClients() {
       title: p.title,
       description: p.description,
       images: [...p.images],
+      portfolioCategories: p.portfolioCategories ?? [],
       year: p.year ? String(p.year) : "",
     });
     setProjectOpen(true);
@@ -272,6 +277,7 @@ export function AdminClients() {
         title: projectEdit.title.trim(),
         description: projectEdit.description.trim(),
         images: projectEdit.images,
+        portfolioCategories: projectEdit.portfolioCategories,
         year: projectEdit.year ? Number(projectEdit.year) : null,
       });
       toast.success(projectEdit.id ? "Project updated" : "Project added");
@@ -382,7 +388,12 @@ export function AdminClients() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-zinc-800">{p.title}</p>
-                        <p className="text-xs text-zinc-400">{p.year ?? "—"}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-400">
+                          <span>{p.year ?? "—"}</span>
+                          {(p.portfolioCategories ?? []).map((category) => (
+                            <Badge key={category} variant="secondary" className="px-1.5 py-0 text-[10px]">{category}</Badge>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex shrink-0 gap-1">
                         <button
@@ -607,6 +618,32 @@ export function AdminClients() {
                       placeholder={String(new Date().getFullYear())}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Portfolio Categories</Label>
+                  <div className="grid max-h-44 gap-2 overflow-y-auto rounded-md border bg-zinc-50 p-3 sm:grid-cols-2">
+                    {portfolioCategories.filter((category) => category !== "All").map((category) => {
+                      const selected = projectEdit.portfolioCategories.includes(category);
+                      return (
+                        <label key={category} className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => setProjectEdit((s) => {
+                              if (!s) return s;
+                              const categories = new Set(s.portfolioCategories);
+                              if (event.target.checked) categories.add(category);
+                              else categories.delete(category);
+                              return { ...s, portfolioCategories: [...categories] };
+                            })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          {category}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-zinc-400">Select every portfolio category where this project should appear. Leave unchecked to show it only under All.</p>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">

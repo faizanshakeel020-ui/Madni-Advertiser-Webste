@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { parseImages } from "@/lib/images";
 
+function parsePortfolioCategories(raw: unknown): string[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.filter((value): value is string => typeof value === "string");
+  } catch {
+    return [raw.trim()];
+  }
+  return [];
+}
+
 /** GET /api/clients — clients (with their projects) for the homepage Our Clients section */
 export async function GET() {
   try {
@@ -24,6 +35,7 @@ export async function GET() {
           title: p.title,
           description: p.description,
           images: parseImages(p.images),
+          portfolioCategories: parsePortfolioCategories(p.portfolioCategory),
           year: p.year,
           sortOrder: p.sortOrder,
         })),

@@ -4,6 +4,17 @@ import { isAdminRequest } from "@/lib/admin-auth";
 import { slugify } from "@/lib/format";
 import { parseImages } from "@/lib/images";
 
+function parsePortfolioCategories(raw: unknown): string[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.filter((value): value is string => typeof value === "string");
+  } catch {
+    return [raw.trim()];
+  }
+  return [];
+}
+
 /** Find a unique slug for a client ("cafe-mocha", "cafe-mocha-2", ...). */
 async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
   let slug = base || "client";
@@ -43,6 +54,7 @@ export async function GET() {
           title: p.title,
           description: p.description,
           images: parseImages(p.images),
+          portfolioCategories: parsePortfolioCategories(p.portfolioCategory),
           year: p.year,
           sortOrder: p.sortOrder,
         })),

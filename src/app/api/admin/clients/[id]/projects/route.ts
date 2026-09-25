@@ -31,6 +31,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         title,
         description,
         images,
+        portfolioCategory: JSON.stringify(
+          Array.isArray(b.portfolioCategories)
+            ? [...new Set(b.portfolioCategories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter(Boolean))]
+            : typeof b.portfolioCategory === "string" && b.portfolioCategory.trim()
+              ? [b.portfolioCategory.trim()]
+              : []
+        ),
         year: Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2200 ? Math.round(yearNum) : null,
         sortOrder,
         clientId: id,
