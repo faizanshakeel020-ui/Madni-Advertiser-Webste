@@ -18,6 +18,7 @@ export type Category = {
   name: string;
   description: string | null;
   image: string | null;
+  hasProductImage?: boolean;
   sortOrder: number;
   productCount?: number;
   subcategories?: Subcategory[];

@@ -343,7 +343,7 @@ export function HomeView() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {categories.map((cat) => (
+              {categories.filter((cat) => cat.hasProductImage).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => navigate(`/shop?cat=${cat.slug}`)}

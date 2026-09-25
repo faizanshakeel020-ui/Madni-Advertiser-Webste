@@ -12,7 +12,6 @@ export async function GET() {
         _count: { select: { products: true } },
         products: {
           orderBy: { updatedAt: "desc" },
-          take: 1,
           select: { images: true },
         },
         subcategories: {
@@ -23,13 +22,17 @@ export async function GET() {
     });
     return NextResponse.json(
       cats.map((c) => {
-        let productImage: string | null = null;
-        try {
-          const images: unknown = JSON.parse(c.products[0]?.images ?? "[]");
-          if (Array.isArray(images) && typeof images[0] === "string") productImage = images[0];
-        } catch {
-          productImage = null;
-        }
+        const productImages = c.products.flatMap((product) => {
+          try {
+            const images: unknown = JSON.parse(product.images || "[]");
+            return Array.isArray(images)
+              ? images.filter((image): image is string => typeof image === "string" && image.trim().length > 0)
+              : [];
+          } catch {
+            return [];
+          }
+        });
+        const productImage = productImages[0] ?? null;
 
         return {
           id: c.id,
@@ -37,6 +40,7 @@ export async function GET() {
           name: c.name,
           description: c.description,
           image: productImage ?? c.image,
+          hasProductImage: productImages.length > 0,
           sortOrder: c.sortOrder,
           productCount: c._count.products,
           subcategories: c.subcategories.map((s) => ({

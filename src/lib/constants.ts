@@ -6,6 +6,7 @@
 export const SITE = {
   name: "Madni Advertiser",
   shortName: "Madni",
+  establishedYear: 1999,
   tagline: "Signs That Make Your Business Shine",
   description:
     "Signage & display advertising — design, fabrication and installation across Pakistan.",
@@ -29,7 +30,7 @@ export const SITE = {
     "Sialkot",
   ],
   stats: {
-    years: 12,
+    years: new Date().getFullYear() - 1999,
     projects: 2500,
     cities: 7,
     clients: 350,

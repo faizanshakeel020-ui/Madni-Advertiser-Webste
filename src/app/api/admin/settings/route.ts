@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { clearAdminCookie, hashPassword, isAdminRequest } from "@/lib/admin-auth";
+import { SITE } from "@/lib/constants";
 
 const DEFAULT_SETTINGS = {
   business: { phone: "+92 300 4572300", email: "madniad786@gmail.com", address: "Imtiaz Center, Main Market, Gulberg II, Lahore, Pakistan", hours: "Mon - Sat: 10:00 AM - 9:00 PM" },
@@ -11,7 +12,7 @@ const DEFAULT_SETTINGS = {
   homepage: { heroTitle: "Signs That Make Your Business Shine", promotion: "" },
   notifications: { email: "madniad786@gmail.com", whatsapp: true, newOrders: true, newQuotes: true },
   seo: { title: "Madni Advertiser - Signage & Display Advertising", description: "Custom signage, LED displays and advertising solutions across Pakistan." },
-  about: { heroTitle: "The sign-makers behind Pakistan's brightest brands", heroText: "For over 12 years, Madni Advertiser has designed, fabricated and installed signage that helps businesses get noticed.", storyTitle: "Started with one flex printer. Still obsessed with craft.", storyText: "Madni Advertiser began in Lahore as a small printing setup with a simple belief: every business deserves a sign it is proud of.", mission: "Make signs that make businesses shine — and keep them shining with honest after-sales service.", images: ["/images/about-workshop.png", "/images/about-team.png"] },
+  about: { heroTitle: "The sign-makers behind Pakistan's brightest brands", heroText: `Established in ${SITE.establishedYear}, Madni Advertiser has designed, fabricated and installed signage that helps businesses get noticed for over ${SITE.stats.years} years.`, storyTitle: `Serving businesses since ${SITE.establishedYear}`, storyText: `Madni Advertiser was established in Lahore in ${SITE.establishedYear} with a simple belief: every business deserves a sign it is proud of.`, mission: "Make signs that make businesses shine — and keep them shining with honest after-sales service.", images: ["/images/about-workshop.png", "/images/about-team.png"] },
 };
 
 export async function GET() {

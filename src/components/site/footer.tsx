@@ -45,7 +45,7 @@ export function Footer() {
           </div>
           <p className="mt-4 text-sm leading-relaxed text-zinc-400">
             {SITE.name} designs, manufactures and installs 3D, LED, acrylic and digital
-            signage for businesses and homes across Pakistan — since {new Date().getFullYear() - SITE.stats.years}.
+            signage for businesses and homes across Pakistan — established {SITE.establishedYear}.
           </p>
           <div className="mt-5 flex gap-2">
             {socialLinks.map(({ url, platform }) => (

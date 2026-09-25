@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { adminGetSettings, adminUpdateSettings, uploadImages } from "@/lib/api";
+import { SITE } from "@/lib/constants";
 
 const defaultAbout = {
   heroTitle: "The sign-makers behind Pakistan's brightest brands",
-  heroText: "For over 12 years, Madni Advertiser has designed, fabricated and installed signage that helps businesses get noticed.",
-  storyTitle: "Started with one flex printer. Still obsessed with craft.",
-  storyText: "Madni Advertiser began in Lahore as a small printing setup with a simple belief: every business deserves a sign it is proud of.",
+  heroText: `Established in ${SITE.establishedYear}, Madni Advertiser has designed, fabricated and installed signage that helps businesses get noticed for over ${SITE.stats.years} years.`,
+  storyTitle: `Serving businesses since ${SITE.establishedYear}`,
+  storyText: `Madni Advertiser was established in Lahore in ${SITE.establishedYear} with a simple belief: every business deserves a sign it is proud of.`,
   mission: "Make signs that make businesses shine — and keep them shining with honest after-sales service.",
   images: ["/images/about-workshop.png", "/images/about-team.png"],
 };
