@@ -54,7 +54,7 @@ export function ServicesIndexView() {
 /* ---------- Single service category page (#/services/:slug) ---------- */
 export function ServiceCategoryView({ slug }: { slug: string }) {
   const { navigate } = useRoute();
-  const { services, portfolio: PORTFOLIO } = useContent();
+  const { services, clients } = useContent();
   const service = services.find((s) => s.slug === slug);
 
   if (!service) {
@@ -68,7 +68,11 @@ export function ServiceCategoryView({ slug }: { slug: string }) {
     );
   }
 
-  const projects = PORTFOLIO.filter((p) => service.projectTags.includes(p.category)).slice(0, 4);
+  const projects = clients
+    .flatMap((client) => client.projects
+      .filter((project) => (project.portfolioCategories ?? []).some((category) => service.projectTags.includes(category)))
+      .map((project) => ({ client, project })))
+    .slice(0, 4);
 
   return (
     <div>
@@ -137,21 +141,20 @@ export function ServiceCategoryView({ slug }: { slug: string }) {
           <div className="container-site">
             <SectionHeading eyebrow="Our Work" title="Example Projects" align="left" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {projects.map((p) => (
+              {projects.map(({ client, project }) => (
                 <button
-                  key={p.id}
-                  onClick={() => navigate("/portfolio")}
+                  key={project.id}
+                  onClick={() => navigate(`/casestudy/portfolio/${client.slug}`)}
                   className="group relative overflow-hidden rounded-xl text-left"
-                  aria-label={`View project: ${p.title}`}
+                  aria-label={`View project: ${project.title}`}
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
-                    { }
-                    <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
+                    <MediaImg src={project.images[0] ?? "/images/proj-building.png"} alt={project.title} className="h-full w-full object-cover img-zoom" />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" aria-hidden="true" />
                   <div className="absolute inset-x-0 bottom-0 p-3">
-                    <Badge variant="secondary" className="bg-white/90 text-zinc-800 hover:bg-white/90">{p.category}</Badge>
-                    <p className="mt-1.5 line-clamp-1 font-display text-sm font-bold text-white">{p.title}</p>
+                    {project.portfolioCategories?.[0] && <Badge variant="secondary" className="bg-white/90 text-zinc-800 hover:bg-white/90">{project.portfolioCategories[0]}</Badge>}
+                    <p className="mt-1.5 line-clamp-1 font-display text-sm font-bold text-white">{project.title}</p>
                   </div>
                 </button>
               ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ArrowUpRight, Briefcase, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,7 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { useRoute } from "@/lib/router";
 import { useContent } from "@/lib/content";
 import { MediaImg } from "@/components/site/media-img";
-import { fetchClients } from "@/lib/api";
-import type { Client, ClientProject } from "@/lib/types";
+import type { ClientProject } from "@/lib/types";
 
 function projectImages(project: ClientProject): string[] {
   return project.images.length ? project.images : ["/images/proj-building.png"];
@@ -18,21 +17,10 @@ function projectImages(project: ClientProject): string[] {
 
 export function PortfolioView() {
   const { route, navigate } = useRoute();
-  const { portfolioCategories: PORTFOLIO_CATEGORIES } = useContent();
+  const { clients: contentClients, portfolioCategories: PORTFOLIO_CATEGORIES, ready } = useContent();
   const filter = route.query.cat ?? "All";
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loadingClients, setLoadingClients] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetchClients()
-      .then((rows) => active && setClients(rows))
-      .catch(() => active && setClients([]))
-      .finally(() => active && setLoadingClients(false));
-    return () => {
-      active = false;
-    };
-  }, []);
+  const clients = contentClients;
+  const loadingClients = !ready;
 
   const projects = useMemo(() => {
     const clientProjects = clients.flatMap((client) =>

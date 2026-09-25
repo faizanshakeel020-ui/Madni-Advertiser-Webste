@@ -69,7 +69,7 @@ const SLIDES = [
 
 export function HomeView() {
   const { navigate } = useRoute();
-  const { services: SERVICES, portfolio: PORTFOLIO } = useContent();
+  const { services: SERVICES, clients: contentClients } = useContent();
   const [emblaRef, embla] = useEmblaCarousel({ loop: true, duration: 25 });
   const [selected, setSelected] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -486,23 +486,22 @@ export function HomeView() {
             description="A glimpse of what we've built for clients across Pakistan — from glowing storefronts to full wayfinding systems."
           />
           <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
-            {PORTFOLIO.slice(0, 6).map((p) => (
+            {contentClients.flatMap((client) => client.projects.map((project) => ({ client, project }))).slice(0, 6).map(({ client, project }) => (
               <button
-                key={p.id}
-                onClick={() => navigate("/portfolio")}
+                key={project.id}
+                onClick={() => navigate(`/casestudy/portfolio/${client.slug}`)}
                 className="group relative overflow-hidden rounded-xl text-left"
-                aria-label={`View project: ${p.title}`}
+                aria-label={`View project: ${project.title}`}
               >
                 <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-100">
-                  { }
-                  <MediaImg src={p.image} alt={p.title} className="h-full w-full object-cover img-zoom" />
+                  <MediaImg src={project.images[0] ?? "/images/proj-building.png"} alt={project.title} className="h-full w-full object-cover img-zoom" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-90" aria-hidden="true" />
                 <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                  <Badge variant="secondary" className="mb-1.5 bg-white/90 text-zinc-800 hover:bg-white/90">{p.category}</Badge>
-                  <p className="line-clamp-1 font-display text-sm font-bold text-white sm:text-base">{p.title}</p>
+                  {(project.portfolioCategories ?? []).length > 0 && <Badge variant="secondary" className="mb-1.5 bg-white/90 text-zinc-800 hover:bg-white/90">{project.portfolioCategories?.[0]}</Badge>}
+                  <p className="line-clamp-1 font-display text-sm font-bold text-white sm:text-base">{project.title}</p>
                   <p className="flex items-center gap-1 text-xs text-zinc-300">
-                    <MapPin className="h-3 w-3" aria-hidden="true" /> {p.city}
+                    <MapPin className="h-3 w-3" aria-hidden="true" /> {client.name}
                   </p>
                 </div>
               </button>

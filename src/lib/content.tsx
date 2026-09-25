@@ -1,20 +1,22 @@
 "use client";
 
 /**
- * Site content store — services + portfolio.
+ * Site content store — services and client project content.
  *
  * Starts from the static bundled content (SSR-safe, zero flash), then loads
- * the live database content via /api/services + /api/portfolio. Admin edits
+ * the live database content via the public content APIs. Admin edits
  * call refresh() and every part of the site updates instantly.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { PORTFOLIO, SERVICES } from "./services-data";
 import { SITE } from "./constants";
-import type { PortfolioProject, ServicePillar } from "./types";
+import { fetchClients } from "./api";
+import type { Client, PortfolioProject, ServicePillar } from "./types";
 
 type ContentState = {
   services: ServicePillar[];
   portfolio: PortfolioProject[];
+  clients: Client[];
   about: { heroTitle: string; heroText: string; storyTitle: string; storyText: string; mission: string; images: string[] };
   socialLinks: { platform: string; url: string }[];
   /** ["All", ...unique categories in display order] */
@@ -34,7 +36,8 @@ const DEFAULT_ABOUT: ContentState["about"] = {
 
 const ContentContext = createContext<ContentState>({
   services: SERVICES,
-  portfolio: PORTFOLIO,
+  portfolio: [],
+  clients: [],
   about: DEFAULT_ABOUT,
   socialLinks: [{ platform: "Facebook", url: SITE.social.facebook }, { platform: "Instagram", url: SITE.social.instagram }],
   portfolioCategories: ["All"],
@@ -44,7 +47,8 @@ const ContentContext = createContext<ContentState>({
 
 export function ContentProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServicePillar[]>(SERVICES);
-  const [portfolio, setPortfolio] = useState<PortfolioProject[]>(PORTFOLIO);
+  const portfolio: PortfolioProject[] = [];
+  const [clients, setClients] = useState<Client[]>([]);
   const [socialLinks, setSocialLinks] = useState<{ platform: string; url: string }[]>([
     { platform: "Facebook", url: SITE.social.facebook },
     { platform: "Instagram", url: SITE.social.instagram },
@@ -54,13 +58,13 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [sRes, pRes, settingsRes] = await Promise.all([
+      const [sRes, settingsRes, clientRes] = await Promise.all([
         fetch("/api/services").then((r) => r.json()).catch(() => null),
-        fetch("/api/portfolio").then((r) => r.json()).catch(() => null),
         fetch("/api/site-settings").then((r) => r.json()).catch(() => null),
+        fetchClients().catch(() => null),
       ]);
       if (Array.isArray(sRes) && sRes.length > 0) setServices(sRes as ServicePillar[]);
-      if (Array.isArray(pRes)) setPortfolio(pRes as PortfolioProject[]);
+      if (Array.isArray(clientRes)) setClients(clientRes);
       if (Array.isArray((settingsRes as { social?: { links?: { platform: string; url: string }[] } } | null)?.social?.links)) {
         setSocialLinks((settingsRes as { social: { links: { platform: string; url: string }[] } }).social.links);
       }
@@ -78,12 +82,20 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const portfolioCategories = useMemo(
-    () => ["All", ...Array.from(new Set(portfolio.map((p) => p.category).filter(Boolean)))],
-    [portfolio]
+    () => [
+      "All",
+      ...Array.from(new Set([
+        ...PORTFOLIO.map((project) => project.category),
+        ...clients.flatMap((client) =>
+          client.projects.flatMap((project) => project.portfolioCategories ?? [])
+        ),
+      ].filter(Boolean))),
+    ],
+    [clients]
   );
 
   return (
-    <ContentContext.Provider value={{ services, portfolio, socialLinks, about, portfolioCategories, ready, refresh }}>
+    <ContentContext.Provider value={{ services, portfolio, clients, socialLinks, about, portfolioCategories, ready, refresh }}>
       {children}
     </ContentContext.Provider>
   );

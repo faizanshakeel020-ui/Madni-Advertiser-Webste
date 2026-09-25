@@ -105,7 +105,7 @@ export function AdminPortfolio() {
   const [renaming, setRenaming] = useState(false);
   const [deleteCatTarget, setDeleteCatTarget] = useState<CategoryDeleteTarget | null>(null);
 
-  const { refresh, portfolio } = useContent();
+  const { refresh } = useContent();
 
   const load = useCallback(async () => {
     try {
@@ -132,7 +132,7 @@ export function AdminPortfolio() {
   }, [rows]);
 
   const categories = Array.from(
-    new Set([...(rows ?? []), ...portfolio].map((p) => p.category).filter(Boolean))
+    new Set((rows ?? []).map((p) => p.category).filter(Boolean))
   );
 
   // ---------- project CRUD ----------

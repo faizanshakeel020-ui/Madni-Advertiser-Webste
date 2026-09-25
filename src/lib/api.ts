@@ -72,7 +72,7 @@ export async function fetchProduct(slug: string): Promise<{ product: Product; re
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  return cachedJsonFetch<Category[]>("/api/categories");
+  return jsonFetch<Category[]>("/api/categories", { cache: "no-store" });
 }
 
 export async function fetchClients(): Promise<Client[]> {
